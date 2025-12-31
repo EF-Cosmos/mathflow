@@ -1,0 +1,82 @@
+services:
+  # 前端服务 (React + Vite)
+  frontend:
+    build:
+      context: ./code/mathflow-new
+      dockerfile: Dockerfile
+    container_name: mathflow-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://backend:3001
+    volumes:
+      - ./code/mathflow-new:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - database
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # 后端 API 服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: mathflow-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-password}@database:5432/postgres
+    volumes:
+      - ./supabase:/app/supabase
+    depends_on:
+      - database
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # PostgreSQL 数据库
+  database:
+    image: postgres:15-alpine
+    container_name: mathflow-database
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./supabase/tables:/docker-entrypoint-initdb.d/tables
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: mathflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+# 网络配置
+networks:
+  app-network:
+    driver: bridge
+
+# 数据卷配置
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

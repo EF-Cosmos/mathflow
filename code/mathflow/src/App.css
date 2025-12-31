@@ -1,0 +1,41 @@
+:root {
+  --background: 0 0% 98%;
+  --foreground: 222.2 84% 4.9%;
+}
+
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 210 40% 98%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.katex {
+  font-size: 1.1em;
+}
+
+.katex-display {
+  margin: 0.5em 0;
+  overflow-x: auto;
+}
+
+.step-card {
+  transition: all 0.2s ease-out;
+}
+
+.step-card:hover {
+  transform: translateY(-1px);
+}
+
+.math-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}

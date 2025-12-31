@@ -1,0 +1,36 @@
+# Node.js
+node_modules/
+dist/
+build/
+.npm/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Docker
+docker-compose.override.yml
+
+# Backup files
+*.bak
+*.swp
+
+# Project specific
+user_input_files/

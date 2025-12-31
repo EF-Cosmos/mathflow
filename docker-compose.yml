@@ -1,0 +1,250 @@
+# =============================================
+# MathFlow 完整部署配置
+# 架构: 前端 → Kong API Gateway → Supabase 服务 → PostgreSQL
+# =============================================
+
+services:
+  # ============================================
+  # 前端服务 (React + Vite + Nginx)
+  # ============================================
+  frontend:
+    build:
+      context: ./code/mathflow-new
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: http://localhost:8000
+        VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY3MTc5NDAzLCJleHAiOjIwODI1Mzk0MDN9.kjq2CFAdDsu769R-hFIrHr11Am4cKhUTJEVIZtIPrk8
+    container_name: mathflow-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - kong
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ============================================
+  # Kong API Gateway (Supabase API 网关)
+  # ============================================
+  kong:
+    image: kong:3.9-ubuntu
+    container_name: mathflow-kong
+    restart: unless-stopped
+    ports:
+      - "8000:8000/tcp"   # REST API (Supabase endpoint)
+      - "8443:8443/tcp"   # REST API (HTTPS)
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    volumes:
+      - ./docker/kong/kong.yml:/var/lib/kong/kong.yml:ro
+    depends_on:
+      - rest
+      - auth
+    networks:
+      - app-network
+
+  # ============================================
+  # PostgREST (自动从数据库生成 REST API)
+  # ============================================
+  rest:
+    image: postgrest/postgrest:v12.2.0
+    container_name: mathflow-rest
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-postgres}@database:5432/mathflow
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ============================================
+  # 数据库初始化检查服务
+  # ============================================
+  db-init-check:
+    image: postgres:15-alpine
+    container_name: mathflow-db-init-check
+    restart: "no"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: mathflow
+      DB_HOST: database
+      DB_USER: supabase_auth_admin
+    command: ["/bin/sh", "/wait-for-db-init.sh"]
+    volumes:
+      - ./docker/wait-for-db-init.sh:/wait-for-db-init.sh:ro
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ============================================
+  # GoTrue (Supabase Auth 认证服务)
+  # ============================================
+  auth:
+    image: supabase/gotrue:v2.158.0
+    container_name: mathflow-auth
+    restart: unless-stopped
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
+      
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-postgres}@database:5432/mathflow
+      
+      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:3000}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:-}
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-false}
+      
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-token-with-at-least-32-characters-long}
+      
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP:-true}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-true}
+      
+      # 日志输出
+      LOG_LEVEL: debug
+    depends_on:
+      db-init-check:
+        condition: service_completed_successfully
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ============================================
+  # PostgreSQL 数据库 (Supabase 官方镜像)
+  # ============================================
+  database:
+    image: supabase/postgres:15.8.1.032
+    container_name: mathflow-database
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: pg_isready -U supabase_admin -h localhost
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: 5432
+      POSTGRES_PORT: 5432
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATABASE: ${POSTGRES_DB:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-token-with-at-least-32-characters-long}
+      JWT_EXP: ${JWT_EXPIRY:-3600}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - wal_level=logical
+      - -c
+      - max_slot_wal_keep_size=1024MB
+      - -c
+      - max_connections=200
+    networks:
+      app-network:
+        aliases:
+          - db
+
+  # ============================================
+  # pg_meta (数据库元信息服务，Studio 需要)
+  # ============================================
+  meta:
+    image: supabase/postgres-meta:v0.84.1
+    container_name: mathflow-meta
+    restart: unless-stopped
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: database
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: ${POSTGRES_DB:-postgres}
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ============================================
+  # Redis 缓存服务
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: mathflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # ============================================
+  # Supabase Studio (数据库管理界面)
+  # ============================================
+  studio:
+    image: supabase/studio:latest
+    container_name: mathflow-studio
+    restart: unless-stopped
+    ports:
+      - "54323:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DEFAULT_ORGANIZATION_NAME: MathFlow
+      DEFAULT_PROJECT_NAME: MathFlow
+      
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
+      SUPABASE_ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU}
+    depends_on:
+      - kong
+      - meta
+    networks:
+      - app-network
+
+# =============================================
+# 网络配置
+# =============================================
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================
+# 数据卷配置
+# =============================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
