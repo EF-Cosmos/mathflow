@@ -57,16 +57,28 @@ export default function Editor() {
   };
 
   const loadDerivation = async (derivationId: string) => {
+    console.log('Loading derivation:', derivationId);
     const [derivationRes, stepsRes] = await Promise.all([
       supabase.from('derivations').select('*').eq('id', derivationId).maybeSingle(),
       supabase.from('derivation_steps').select('*').eq('derivation_id', derivationId).order('step_number')
     ]);
 
+    if (derivationRes.error) {
+      console.error('Error loading derivation:', derivationRes.error);
+      alert(`加载推导失败: ${derivationRes.error.message}`);
+    }
+
     if (derivationRes.data) {
       setTitle(derivationRes.data.title);
     }
 
+    if (stepsRes.error) {
+      console.error('Error loading steps:', stepsRes.error);
+      alert(`加载步骤失败: ${stepsRes.error.message}`);
+    }
+
     if (stepsRes.data) {
+      console.log('Loaded steps:', stepsRes.data);
       const localSteps = stepsRes.data.map(s => ({
         id: s.id,
         step_number: s.step_number,
@@ -214,13 +226,18 @@ export default function Editor() {
   };
 
   const saveDerivation = async () => {
-    if (!user) return;
+    if (!user) {
+      alert('请先登录再保存！');
+      return;
+    }
     setSaving(true);
 
     try {
       let dId = derivationId;
+      console.log('Saving derivation for user:', user.id);
 
       if (!dId) {
+        console.log('Creating new derivation...');
         const { data, error } = await supabase
           .from('derivations')
           .insert({ user_id: user.id, title })
@@ -235,8 +252,10 @@ export default function Editor() {
         if (data) {
           dId = data.id;
           setDerivationId(dId);
+          console.log('Created derivation:', dId);
         }
       } else {
+        console.log('Updating derivation:', dId);
         const { error } = await supabase
           .from('derivations')
           .update({ title, updated_at: new Date().toISOString() })
@@ -249,6 +268,7 @@ export default function Editor() {
       }
 
       if (dId) {
+        console.log('Deleting old steps for:', dId);
         const { error: deleteError } = await supabase.from('derivation_steps').delete().eq('derivation_id', dId);
         if (deleteError) {
           console.error('Failed to delete old steps:', deleteError);
@@ -259,13 +279,14 @@ export default function Editor() {
           const stepsToInsert = steps.map((s, i) => ({
             derivation_id: dId!, // Ensure dId is not null
             step_number: i + 1,
-            input_latex: s.input_latex,
-            output_latex: s.output_latex,
-            operation: s.operation,
-            annotation: s.annotation,
-            is_verified: s.is_verified
+            input_latex: s.input_latex || '', // Ensure not null
+            output_latex: s.output_latex || '', // Ensure not null
+            operation: s.operation || 'Input',
+            annotation: s.annotation || '',
+            is_verified: s.is_verified || false
           }));
           
+          console.log('Inserting new steps:', stepsToInsert);
           const { error: insertError } = await supabase.from('derivation_steps').insert(stepsToInsert);
           if (insertError) {
             console.error('Failed to insert new steps:', insertError);

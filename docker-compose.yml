@@ -224,6 +224,11 @@ services:
       SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
       SUPABASE_ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU}
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: require('os').hostname(), port: 3000, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode >= 200 && res.statusCode < 400 ? 0 : 1); }); req.on('error', (e) => { process.exit(1); }); req.end();"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       - kong
       - meta

@@ -43,6 +43,17 @@ export default function ScratchPad({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 监听 initialSteps 变化，同步外部数据
+  useEffect(() => {
+    // 只有当外部传入的步骤与当前不一致时才更新，避免循环更新
+    // 这里简单判断长度，或者可以做更深层的比较
+    if (initialSteps.length > 0 && JSON.stringify(initialSteps) !== JSON.stringify(steps)) {
+      setSteps(initialSteps);
+      setHistory([initialSteps]);
+      setHistoryIndex(0);
+    }
+  }, [initialSteps]);
+
   // 自动滚动到底部
   useEffect(() => {
     if (scrollRef.current) {
