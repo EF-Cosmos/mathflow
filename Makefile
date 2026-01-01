@@ -37,7 +37,7 @@ check-env:
 # 开发环境
 dev: check-env
 	@echo "🚀 启动开发环境..."
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+	docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 	@echo "✅ 开发环境启动完成!"
 	@echo "📱 访问地址:"
 	@echo "   - 主应用: http://localhost:8080"
@@ -46,40 +46,40 @@ dev: check-env
 	@echo "   - Portainer: http://localhost:8080/portainer"
 
 dev-logs:
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml logs -f
+	docker compose -f docker-compose.yml -f docker-compose.override.yml logs -f
 
 dev-stop:
 	@echo "🛑 停止开发环境..."
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml down
+	docker compose -f docker-compose.yml -f docker-compose.override.yml down
 
 # 生产环境
 prod: check-env
 	@echo "🚀 启动生产环境..."
-	docker-compose -f docker-compose.yml up -d
+	docker compose -f docker-compose.yml up -d
 	@echo "✅ 生产环境启动完成!"
 	@echo "📱 访问地址:"
 	@echo "   - 主应用: http://localhost"
 
 prod-logs:
-	docker-compose -f docker-compose.yml logs -f
+	docker compose -f docker-compose.yml logs -f
 
 prod-stop:
 	@echo "🛑 停止生产环境..."
-	docker-compose -f docker-compose.yml down
+	docker compose -f docker-compose.yml down
 
 # 构建镜像
 build:
 	@echo "🔨 构建 Docker 镜像..."
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 # 重启服务
 restart: 
 	@echo "🔄 重启服务..."
-	docker-compose restart
+	docker compose restart
 
 # 查看服务状态
 ps:
-	docker-compose ps
+	docker compose ps
 
 # 查看服务信息
 info:
@@ -92,13 +92,13 @@ info:
 	@docker volume ls | grep mathflow
 	@echo ""
 	@echo "📱 运行中的服务:"
-	@docker-compose ps
+	@docker compose ps
 
 # 清理环境
 clean:
 	@echo "🧹 清理 Docker 环境..."
 	@read -p "⚠️  这将删除所有数据，确认继续? [y/N]: " confirm && [ "$$confirm" = "y" ]
-	docker-compose down -v --remove-orphans
+	docker compose down -v --remove-orphans
 	docker system prune -f
 	@echo "✅ 清理完成!"
 
@@ -138,52 +138,52 @@ health:
 	@echo "🏥 检查服务健康状态..."
 	@echo ""
 	@echo "📊 数据库连接:"
-	@docker-compose exec -T postgres pg_isready -U mathflow || echo "❌ 数据库连接失败"
+	@docker compose exec -T postgres pg_isready -U mathflow || echo "❌ 数据库连接失败"
 	@echo ""
 	@echo "🔴 Redis 连接:"
-	@docker-compose exec -T redis redis-cli ping || echo "❌ Redis 连接失败"
+	@docker compose exec -T redis redis-cli ping || echo "❌ Redis 连接失败"
 	@echo ""
 	@echo "🌐 Nginx 状态:"
 	@curl -s http://localhost/health || echo "❌ Nginx 连接失败"
 	@echo ""
 	@echo "📱 Docker Compose 服务状态:"
-	@docker-compose ps
+	@docker compose ps
 
 # 数据库管理
 db-shell:
 	@echo "🐘 连接数据库 shell..."
-	docker-compose exec postgres psql -U mathflow -d mathflow
+	docker compose exec postgres psql -U mathflow -d mathflow
 
 db-backup:
 	@echo "💾 备份数据库..."
-	docker-compose exec postgres pg_dump -U mathflow mathflow > backups/db_$(shell date +%Y%m%d_%H%M%S).sql
+	docker compose exec postgres pg_dump -U mathflow mathflow > backups/db_$(shell date +%Y%m%d_%H%M%S).sql
 
 db-restore:
 	@echo "📂 恢复数据库..."
 	@read -p "输入备份文件名: " BACKUP_FILE && \
-	docker-compose exec -T postgres psql -U mathflow -d mathflow < $$BACKUP_FILE
+	docker compose exec -T postgres psql -U mathflow -d mathflow < $$BACKUP_FILE
 
 # 日志管理
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-nginx:
-	docker-compose logs -f nginx
+	docker compose logs -f nginx
 
 logs-app:
-	docker-compose logs -f app
+	docker compose logs -f app
 
 logs-db:
-	docker-compose logs -f postgres
+	docker compose logs -f postgres
 
 logs-redis:
-	docker-compose logs -f redis
+	docker compose logs -f redis
 
 # 更新服务
 update:
 	@echo "🔄 更新服务..."
-	docker-compose pull
-	docker-compose up -d
+	docker compose pull
+	docker compose up -d
 	@echo "✅ 服务更新完成!"
 
 # 开发工具
@@ -199,20 +199,20 @@ stats:
 
 # 进入容器
 shell-app:
-	docker-compose exec app sh
+	docker compose exec app sh
 
 shell-db:
-	docker-compose exec postgres sh
+	docker compose exec postgres sh
 
 shell-nginx:
-	docker-compose exec nginx sh
+	docker compose exec nginx sh
 
 # 安装依赖 (开发环境)
 install:
 	@echo "📦 安装依赖..."
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml exec app npm install
+	docker compose -f docker-compose.yml -f docker-compose.override.yml exec app npm install
 
 # 初始化数据库
 init-db:
 	@echo "🗄️  初始化数据库..."
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml exec postgres psql -U mathflow -d mathflow -f /docker-entrypoint-initdb.d/01-init-database.sh
+	docker compose -f docker-compose.yml -f docker-compose.override.yml exec postgres psql -U mathflow -d mathflow -f /docker-entrypoint-initdb.d/01-init-database.sh

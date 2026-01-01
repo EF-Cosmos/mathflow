@@ -4,12 +4,9 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>MathFlow_AI数学推导网页项目报告</title>
+  <title>MathFlow_report</title>
   <style>
     html {
-      line-height: 1.5;
-      font-family: Georgia, serif;
-      font-size: 20px;
       color: #1a1a1a;
       background-color: #fdfdfd;
     }
@@ -28,13 +25,16 @@
     @media (max-width: 600px) {
       body {
         font-size: 0.9em;
-        padding: 1em;
+        padding: 12px;
       }
       h1 {
         font-size: 1.8em;
       }
     }
     @media print {
+      html {
+        background-color: white;
+      }
       body {
         background-color: transparent;
         color: black;
@@ -58,6 +58,10 @@
       color: #1a1a1a;
     }
     img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
       max-width: 100%;
     }
     h1, h2, h3, h4, h5, h6 {
@@ -84,9 +88,10 @@
       color: #606060;
     }
     code {
-      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
       font-size: 85%;
       margin: 0;
+      hyphens: manual;
     }
     pre {
       margin: 1em 0;
@@ -102,8 +107,8 @@
      overflow: visible;
     }
     hr {
-      background-color: #1a1a1a;
       border: none;
+      border-top: 1px solid #1a1a1a;
       height: 1px;
       margin: 1em 0;
     }
@@ -148,10 +153,21 @@
     }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
-    span.underline{text-decoration: underline;}
-    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
     div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-    ul.task-list{list-style: none;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
     pre > code.sourceCode { white-space: pre; position: relative; }
     pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
     pre > code.sourceCode > span:empty { height: 1.2em; }
@@ -215,16 +231,137 @@
     code span.va { color: #19177c; } /* Variable */
     code span.vs { color: #4070a0; } /* VerbatimString */
     code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
 </head>
 <body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#mathflow-ai辅助数学推导网页项目报告"
+id="toc-mathflow-ai辅助数学推导网页项目报告">MathFlow
+AI辅助数学推导网页项目报告</a>
+<ul>
+<li><a href="#执行摘要" id="toc-执行摘要">执行摘要</a></li>
+<li><a href="#一项目概述与研究动机"
+id="toc-一项目概述与研究动机">一、项目概述与研究动机</a>
+<ul>
+<li><a href="#传统数学学习工具的局限性分析"
+id="toc-传统数学学习工具的局限性分析">1.1
+传统数学学习工具的局限性分析</a></li>
+<li><a href="#ai辅助学习的必要性与价值"
+id="toc-ai辅助学习的必要性与价值">1.2 AI辅助学习的必要性与价值</a></li>
+<li><a href="#项目的应用价值与社会意义"
+id="toc-项目的应用价值与社会意义">1.3 项目的应用价值与社会意义</a></li>
+</ul></li>
+<li><a href="#二技术方案设计与系统架构"
+id="toc-二技术方案设计与系统架构">二、技术方案设计与系统架构</a>
+<ul>
+<li><a href="#技术选型依据与论证" id="toc-技术选型依据与论证">2.1
+技术选型依据与论证</a></li>
+<li><a href="#系统整体架构设计" id="toc-系统整体架构设计">2.2
+系统整体架构设计</a></li>
+<li><a href="#前端架构设计详解" id="toc-前端架构设计详解">2.3
+前端架构设计详解</a></li>
+<li><a href="#组件关系与数据流程" id="toc-组件关系与数据流程">2.4
+组件关系与数据流程</a></li>
+</ul></li>
+<li><a href="#三数据库设计与数据模型"
+id="toc-三数据库设计与数据模型">三、数据库设计与数据模型</a>
+<ul>
+<li><a href="#数据库架构概述" id="toc-数据库架构概述">3.1
+数据库架构概述</a></li>
+<li><a href="#核心数据表设计" id="toc-核心数据表设计">3.2
+核心数据表设计</a></li>
+<li><a href="#数据库索引与性能优化" id="toc-数据库索引与性能优化">3.3
+数据库索引与性能优化</a></li>
+</ul></li>
+<li><a href="#四核心功能实现详解"
+id="toc-四核心功能实现详解">四、核心功能实现详解</a>
+<ul>
+<li><a href="#数学公式渲染组件实现" id="toc-数学公式渲染组件实现">4.1
+数学公式渲染组件实现</a></li>
+<li><a href="#推导编辑器页面实现" id="toc-推导编辑器页面实现">4.2
+推导编辑器页面实现</a></li>
+<li><a href="#ai对话组件实现" id="toc-ai对话组件实现">4.3
+AI对话组件实现</a></li>
+<li><a href="#操作面板组件实现" id="toc-操作面板组件实现">4.4
+操作面板组件实现</a></li>
+<li><a href="#认证与授权实现" id="toc-认证与授权实现">4.5
+认证与授权实现</a></li>
+</ul></li>
+<li><a href="#五docker容器化部署方案"
+id="toc-五docker容器化部署方案">五、Docker容器化部署方案</a>
+<ul>
+<li><a href="#docker架构设计" id="toc-docker架构设计">5.1
+Docker架构设计</a></li>
+<li><a href="#前端服务docker配置" id="toc-前端服务docker配置">5.2
+前端服务Docker配置</a></li>
+<li><a href="#后端服务docker配置" id="toc-后端服务docker配置">5.3
+后端服务Docker配置</a></li>
+<li><a href="#数据库服务配置" id="toc-数据库服务配置">5.4
+数据库服务配置</a></li>
+<li><a href="#服务编排与调度" id="toc-服务编排与调度">5.5
+服务编排与调度</a></li>
+</ul></li>
+<li><a href="#六自动化部署与管理脚本"
+id="toc-六自动化部署与管理脚本">六、自动化部署与管理脚本</a>
+<ul>
+<li><a href="#部署脚本套件概述" id="toc-部署脚本套件概述">6.1
+部署脚本套件概述</a></li>
+<li><a href="#部署流程详解" id="toc-部署流程详解">6.2
+部署流程详解</a></li>
+<li><a href="#日志管理功能" id="toc-日志管理功能">6.3
+日志管理功能</a></li>
+<li><a href="#数据备份与恢复" id="toc-数据备份与恢复">6.4
+数据备份与恢复</a></li>
+</ul></li>
+<li><a href="#七项目特色与创新点"
+id="toc-七项目特色与创新点">七、项目特色与创新点</a>
+<ul>
+<li><a href="#传统工具的差异化创新" id="toc-传统工具的差异化创新">7.1
+传统工具的差异化创新</a></li>
+<li><a href="#ai与手动推导的独特结合"
+id="toc-ai与手动推导的独特结合">7.2 AI与手动推导的独特结合</a></li>
+<li><a href="#高等数学支持的全面性" id="toc-高等数学支持的全面性">7.3
+高等数学支持的全面性</a></li>
+<li><a href="#用户体验设计的创新" id="toc-用户体验设计的创新">7.4
+用户体验设计的创新</a></li>
+<li><a href="#技术实现的创新亮点" id="toc-技术实现的创新亮点">7.5
+技术实现的创新亮点</a></li>
+</ul></li>
+<li><a href="#八部署指南与功能演示"
+id="toc-八部署指南与功能演示">八、部署指南与功能演示</a>
+<ul>
+<li><a href="#环境准备与前置条件" id="toc-环境准备与前置条件">8.1
+环境准备与前置条件</a></li>
+<li><a href="#快速部署步骤" id="toc-快速部署步骤">8.2
+快速部署步骤</a></li>
+<li><a href="#服务访问地址" id="toc-服务访问地址">8.3
+服务访问地址</a></li>
+<li><a href="#功能使用说明" id="toc-功能使用说明">8.4
+功能使用说明</a></li>
+<li><a href="#部署测试验证" id="toc-部署测试验证">8.5
+部署测试验证</a></li>
+</ul></li>
+<li><a href="#九总结与未来发展"
+id="toc-九总结与未来发展">九、总结与未来发展</a>
+<ul>
+<li><a href="#项目成果总结" id="toc-项目成果总结">9.1
+项目成果总结</a></li>
+<li><a href="#技术亮点回顾" id="toc-技术亮点回顾">9.2
+技术亮点回顾</a></li>
+<li><a href="#未来发展规划" id="toc-未来发展规划">9.3
+未来发展规划</a></li>
+</ul></li>
+<li><a href="#参考资料" id="toc-参考资料">参考资料</a></li>
+</ul></li>
+</ul>
+</nav>
 <h1 id="mathflow-ai辅助数学推导网页项目报告">MathFlow
 AI辅助数学推导网页项目报告</h1>
 <h2 id="执行摘要">执行摘要</h2>
-<p>MathFlow是一个创新性的AI辅助数学推导网页应用，旨在解决传统数学学习工具中存在的核心矛盾：手写推导公式过程繁琐，而直接使用AI计算器又失去了学习意义。本项目采用现代化的全栈开发技术栈，实现了手动推导操作与AI智能辅助的完美结合，为用户提供了一个既保留传统数学学习过程又具备智能化辅助功能的综合性数学工作台。</p>
+<p>MathFlow是一个创新性的AI辅助数学推导网页应用，旨在解决传统数学学习工具中存在的核心矛盾：手写推导公式过程繁琐，而完全使用AI或者计算器又失去了学习意义。本项目采用现代化的全栈开发技术栈，实现了手动推导操作与AI智能辅助的完美结合，为用户提供了一个既保留传统数学学习过程又具备智能化辅助功能的综合性数学工作台。</p>
 <p>项目基于React 18 + TypeScript +
-Vite技术栈构建前端应用，采用Supabase作为后端服务和数据库解决方案，通过Docker容器化技术实现跨平台部署。系统支持完整的数学推导工作流程，包括LaTeX公式渲染、推导步骤管理、AI智能辅助对话、模板库管理等功能。截至目前，项目已完成开发并部署至公网环境，可通过指定地址访问使用。</p>
+Vite技术栈构建前端应用，采用Supabase作为后端服务和数据库解决方案，通过Docker容器化技术实现跨平台部署。系统支持完整的数学推导工作流程，包括LaTeX公式渲染、推导步骤管理、AI智能辅助对话、模板库管理等功能。</p>
 <p>本报告将从问题定义、技术架构、实现细节、部署方案、项目特色等多个维度进行详细阐述，全面展示该项目的技术深度和创新价值。</p>
 <hr />
 <h2 id="一项目概述与研究动机">一、项目概述与研究动机</h2>
@@ -244,12 +381,20 @@ Vite技术栈构建前端应用，采用Supabase作为后端服务和数据库�
 <h3 id="技术选型依据与论证">2.1 技术选型依据与论证</h3>
 <p>技术选型是项目成功的基础，MathFlow在技术选型上遵循”成熟稳定、社区活跃、生态完善”的原则，确保项目的长期可维护性和扩展性。</p>
 <p>前端技术栈选用了React
-18作为UI框架，这一选择基于多方面的考量。React的组件化架构非常适合构建复杂的交互式界面，MathFlow的推导步骤卡片、AI对话面板、数学公式编辑器等都可以抽象为独立的React组件，实现代码的高内聚低耦合。React
+18.3.1作为UI框架，这一选择基于多方面的考量。React的组件化架构非常适合构建复杂的交互式界面，MathFlow的推导步骤卡片、AI对话面板、数学公式编辑器等都可以抽象为独立的React组件，实现代码的高内聚低耦合。React
 18引入的并发渲染特性能够确保大型数学公式渲染时不阻塞用户界面，提升用户体验。此外，React拥有庞大的生态系统，MathFlow项目中使用的状态管理、路由管理、UI组件库等都有成熟的解决方案[1]。</p>
-<p>TypeScript的引入是另一个关键决策。作为JavaScript的超集，TypeScript提供了静态类型检查能力，能够在编译时发现潜在的代码错误，大大降低了运行时出错的风险。对于MathFlow这样涉及复杂数据流（推导步骤、用户会话、AI对话等）的应用，TypeScript的类型系统能够清晰地定义数据结构的形状，提高代码的可读性和可维护性。</p>
-<p>Vite作为构建工具，相比传统的Webpack具有显著的性能优势。Vite利用浏览器原生的ES模块支持，在开发模式下实现即时的冷启动和热更新；在生产模式下，Rollup打包器能够生成高度优化的静态资源。这对于MathFlow这样需要频繁更新和迭代的项目来说，开发效率的提升是显而易见的[2]。</p>
-<p>KaTeX作为数学公式渲染引擎，是MathFlow的核心依赖之一。相比MathJax，KaTeX具有更快的渲染速度和更小的包体积，能够实现数学公式的即时渲染而不会出现明显的延迟。虽然KaTeX支持的LaTeX命令集相对有限，但对于MathFlow的目标使用场景——基础数学推导而言已经完全足够[3]。</p>
-<p>后端服务采用Supabase平台，这是一个开源的Firebase替代方案。Supabase基于PostgreSQL数据库，提供实时订阅、身份认证、边缘函数（Edge
+<p>TypeScript
+5.6.2的引入是另一个关键决策。作为JavaScript的超集，TypeScript提供了静态类型检查能力，能够在编译时发现潜在的代码错误，大大降低了运行时出错的风险。对于MathFlow这样涉及复杂数据流（推导步骤、用户会话、AI对话等）的应用，TypeScript的类型系统能够清晰地定义数据结构的形状，提高代码的可读性和可维护性。</p>
+<p>Vite
+6.0.1作为构建工具，相比传统的Webpack具有显著的性能优势。Vite利用浏览器原生的ES模块支持，在开发模式下实现即时的冷启动和热更新；在生产模式下，Rollup打包器能够生成高度优化的静态资源。这对于MathFlow这样需要频繁更新和迭代的项目来说，开发效率的提升是显而易见的[2]。</p>
+<p>KaTeX
+0.16.9作为数学公式渲染引擎，是MathFlow的核心依赖之一。相比MathJax，KaTeX具有更快的渲染速度和更小的包体积，能够实现数学公式的即时渲染而不会出现明显的延迟。虽然KaTeX支持的LaTeX命令集相对有限，但对于MathFlow的目标使用场景——基础数学推导而言已经完全足够[3]。</p>
+<p>UI组件库方面，项目采用了TailwindCSS
+v3.4.16作为原子化CSS框架，结合Radix
+UI组件库实现无障碍访问的UI组件，以及Lucide
+React作为现代化图标库。这些技术栈的组合确保了界面的一致性、美观性和可访问性。</p>
+<p>后端服务采用Supabase
+2.45.0平台，这是一个开源的Firebase替代方案。Supabase基于PostgreSQL数据库，提供实时订阅、身份认证、边缘函数（Edge
 Functions）等功能，非常适合构建现代化的全栈应用。选择Supabase的主要考虑包括：PostgreSQL的可靠性和功能丰富性、实时数据同步能力、以及与React应用的良好集成体验[4]。</p>
 <h3 id="系统整体架构设计">2.2 系统整体架构设计</h3>
 <p>MathFlow采用前后端分离的微服务架构，通过RESTful
@@ -268,53 +413,187 @@ Functions运行在边缘节点，提供AI对话等需要快速响应的功能；
 ├── components/        # 可复用组件
 │   ├── AIChat.tsx     # AI对话组件
 │   ├── MathRenderer.tsx # 数学公式渲染组件
-│   └── OperationPanel.tsx # 操作面板组件
+│   ├── ErrorBoundary.tsx # 错误边界组件
+│   └── ScratchPad/    # 草稿纸（核心推导组件）
+│       ├── ScratchPad.tsx # 主草稿纸组件
+│       ├── StepCard.tsx # 步骤卡片组件
+│       ├── InteractiveFormula.tsx # 交互式公式组件
+│       └── operations/ # 各种操作组件
+├── hooks/             # React Hooks
+│   └── use-mobile.tsx # 移动端检测Hook
 ├── lib/               # 工具库和配置
-│   ├── auth.ts        # 认证相关逻辑
-│   └── supabase.ts    # Supabase客户端配置
+│   ├── auth.tsx       # 认证相关逻辑
+│   ├── supabase.ts    # Supabase客户端配置
+│   ├── equation.ts    # LaTeX方程解析和处理核心库
+│   └── utils.ts       # 通用工具函数
 ├── pages/             # 页面组件
 │   ├── Dashboard.tsx  # 仪表板页面
-│   ├── Editor.tsx     # 推导编辑器页面
+│   ├── ScratchPadPage.tsx # 草稿纸页面（核心推导界面）
+│   ├── Editor.tsx     # 旧版编辑器（已重定向到ScratchPadPage）
 │   └── Login.tsx      # 登录页面
+├── types/             # TypeScript类型定义
 ├── App.tsx            # 应用根组件
 └── main.tsx           # 应用入口</code></pre>
-<p>页面路由设计遵循SPA的最佳实践。<code>/</code>路径映射到仪表板页面，展示用户的推导历史和模板库；<code>/editor/:id?</code>路径映射到推导编辑器页面，其中<code>:id</code>参数是可选的，用于加载已有的推导；<code>/login</code>路径映射到登录/注册页面。路由配置通过React
+<p>页面路由设计遵循SPA的最佳实践。<code>/</code>路径映射到仪表板页面，展示用户的推导历史和模板库；<code>/scratchpad/:id?</code>路径映射到草稿纸页面（核心推导界面），其中<code>:id</code>参数是可选的，用于加载已有的推导；<code>/editor/:id?</code>路径保留向后兼容，会重定向到ScratchPadPage；<code>/login</code>路径映射到登录/注册页面。路由配置通过React
 Router v6实现，支持嵌套路由和路由守卫。</p>
 <p>状态管理采用混合策略。局部状态使用React的useState和useReducer钩子管理；跨组件共享的状态通过Context
 API提供；需要持久化的状态（如用户会话信息）使用localStorage存储。这种设计避免了引入额外的状态管理库（如Redux），降低了项目的复杂度。</p>
 <h3 id="组件关系与数据流程">2.4 组件关系与数据流程</h3>
 <p>MathFlow的核心组件可以划分为三条主要的数据流：推导步骤流、用户认证流和AI对话流。</p>
-<p>推导步骤流是系统的主数据流。用户输入LaTeX公式后，MathRenderer组件将公式渲染为视觉化的数学表达式；当用户确认添加步骤时，步骤数据被添加到本地状态，并可选择性地同步到Supabase数据库。编辑器页面维护一个推导步骤数组，每个步骤包含输入公式、输出公式、操作类型等字段。步骤的添加、修改、删除操作都会触发历史记录的更新，支持撤销/重做功能。</p>
+<h4 id="方程解析与处理核心库">方程解析与处理核心库</h4>
+<p>MathFlow的核心创新在于实现了真正的LaTeX方程解析和处理能力。<code>lib/equation.ts</code>文件提供了完整的方程处理功能，包括以下核心函数和数据类型：</p>
+<p><strong>数据类型定义：</strong> - <code>ParsedEquation</code>:
+方程解析结果，包含lhs（左边）、rhs（右边）、hasEquals（是否有等号） -
+<code>ParsedTerm</code>:
+单个分析项，包含sign（正负号）、latex（不含符号的LaTeX表达式） -
+<code>ParsedCoefficient</code>:
+项的系数解析结果，包含coefficient（系数值）、variable（变量部分）</p>
+<p><strong>核心功能函数：</strong> -
+<strong>方程分割</strong>（<code>splitEquation</code>）：将LaTeX方程按等号分割为左右两边，支持嵌套括号的正确解析，使用<code>scanTopLevel</code>函数跟踪括号层级深度
+-
+<strong>项的分割</strong>（<code>splitTerms</code>）：将表达式按加减号分割为独立的项，正确处理嵌套结构中的符号，自动识别前导符号
+-
+<strong>系数解析</strong>（<code>parseTermCoefficient</code>）：解析每一项的系数和变量部分，支持多种格式：<br />
+- 纯数字：“3” → {coefficient: 3, variable: ““}<br />
+- 带变量的项：”2x” → {coefficient: 2, variable: “x”}<br />
+- 缺省系数：“x” → {coefficient: 1, variable: “x”}<br />
+- 带负号：“-2x^2” → {coefficient: 2, variable:
+“x^2”}（符号由ParsedTerm.sign管理） -
+<strong>同类项识别</strong>（<code>findLikeTerms</code>）：基于<code>getTermTypeKey</code>函数计算项的类型键，识别所有同类项索引
+-
+<strong>移项操作</strong>（<code>moveTermInEquation</code>）：将方程一边的项移到另一边，自动使用<code>flipSign</code>函数翻转符号，返回完整的移动信息和结果方程
+-
+<strong>合并同类项</strong>（<code>combineLikeTermInEquation</code>）：智能合并同类项，使用<code>buildCombinedTerm</code>函数正确构建合并后的项，处理系数为1的情况
+-
+<strong>格式化函数</strong>（<code>formatTerms</code>）：将分析后的项数组转换为LaTeX字符串
+-
+<strong>辅助函数</strong>（<code>stripOuterSpaces</code>、<code>scanTopLevel</code>、<code>flipSign</code>）：处理空格、扫描括号层级、翻转符号等通用操作</p>
+<p>这些函数构成了交互式数学推导的基础，让用户能够点击公式中的具体项来执行操作，而不是仅仅进行文本替换。系统支持完整的等式两边操作，自动处理符号变化，确保数学推导的正确性。</p>
+<h4 id="推导步骤流">推导步骤流</h4>
+<p>推导步骤流是系统的主数据流。ScratchPad组件是核心推导界面，实现了完整的交互式数学推导工作流程。</p>
+<p><strong>状态管理：</strong> - <code>steps</code>:
+存储所有推导步骤的数组，每个步骤包含id、stepNumber、latex、operation、timestamp等字段
+- <code>history</code>:
+历史记录数组，使用快照+指针的设计实现撤销/重做功能 -
+<code>historyIndex</code>: 当前历史记录指针位置 -
+<code>currentInput</code>: 当前输入框的内容 - <code>activeAction</code>:
+当前激活的交互模式（移项move/合并combine等） -
+<code>expandedSteps</code>: 展开的步骤集合</p>
+<p><strong>核心功能实现：</strong> - <strong>addStep()</strong>:
+添加新步骤，自动更新历史记录指针 - <strong>editStep()</strong>:
+编辑指定步骤，触发历史记录快照创建 - <strong>deleteStep()</strong>:
+删除步骤并自动重新编号 - <strong>useStepAsBase()</strong>:
+从指定历史步骤继续推导，清除后续步骤 - <strong>clearAll()</strong>:
+清空所有步骤和输入 - <strong>undo()</strong>: 撤销操作（Ctrl+Z支持） -
+<strong>redo()</strong>: 重做操作（Ctrl+Shift+Z支持）</p>
+<p><strong>交互式推导特性：</strong>
+与普通编辑器不同，MathFlow的ScratchPad实现了真正的交互式推导：</p>
+<ol type="1">
+<li><p><strong>项级别的交互操作</strong>：</p>
+<ul>
+<li>点击公式中的任意项来执行移项操作（M键切换移项模式）</li>
+<li>点击同类项进行合并操作（C键切换合并模式）</li>
+<li>支持操作模式状态显示和取消（Escape键）</li>
+</ul></li>
+<li><p><code>handleTermAction()</code>: 处理项级别的操作</p>
+<ul>
+<li>移项操作：调用<code>moveTermInEquation</code>，将项从等式一边移到另一边</li>
+<li>合并操作：调用<code>combineLikeTermInEquation</code>，智能合并所有同类项</li>
+</ul></li>
+<li><p><strong>两边同时操作</strong>：
+<code>handleBothSidesOperation()</code>
+支持对等式两边同时执行加、减、乘、除操作：</p>
+<ul>
+<li>加法：两边同时加同一值</li>
+<li>减法：两边同时减同一值</li>
+<li>乘法：两边同时乘同一值（使用）</li>
+<li>除法：两边同时除同一值（使用分数形式）</li>
+</ul></li>
+<li><p><strong>微积分操作</strong>：
+<code>handleCalculusOperation()</code>
+支持对公式或等式应用微积分变换，自动识别等式两边并分别操作</p></li>
+<li><p><strong>快捷符号插入</strong>： <code>insertAtCursor()</code>
+支持在光标位置插入LaTeX符号，自动调整光标位置</p></li>
+</ol>
+<p><strong>历史记录管理：</strong> -
+采用快照+指针设计，每次状态变化创建完整状态快照 -
+支持任意次数的撤销和重做 - 初始化步骤变化时自动同步外部数据 -
+自动滚动到底部查看最新步骤</p>
+<p><strong>键盘快捷键支持：</strong> - Ctrl/Cmd + Z: 撤销 - Ctrl/Cmd +
+Shift + Z: 重做<br />
+- M: 切换移项模式 - C: 切换合并模式 - Escape: 取消当前操作模式 -
+Shift+Enter: 添加步骤</p>
+<p>用户可以从任意历史步骤继续推导，系统会清除该步骤之后的所有步骤并开始新的分支，确保推导历史的清晰和可追溯性。</p>
+<h4 id="用户认证流">用户认证流</h4>
 <p>用户认证流负责处理用户的登录和注册。应用使用Supabase
 Auth服务进行身份管理，支持邮箱/密码认证。认证状态通过AuthContext向下传递，所有需要认证的路由都被包裹在PrivateRoute组件中进行保护。登录成功后，用户的身份信息被存储在session中，后续的API请求会自动附加认证令牌。</p>
-<p>AI对话流处理用户与AI助手的交互。当用户在AIChat组件中发送消息时，请求被发送到Supabase
-Edge Function，该函数负责调用外部AI
-API（如OpenAI或Anthropic）。AI的响应经过处理后返回给客户端，渲染为对话消息。AI对话与当前推导上下文关联，AI能够看到之前的推导历史，从而提供更精准的辅助建议。</p>
+<h4 id="ai对话流">AI对话流</h4>
+<p>AI对话流处理用户与AI助手的交互。AIChat组件是核心对话组件，实现了完整的AI辅助功能。</p>
+<p><strong>配置管理：</strong> - 支持自定义API Key、API端点和模型名称 -
+配置保存在localStorage中，持久化存储 -
+默认API端点：https://api.deepseek.com</p>
+<p><strong>支持的预设模型：</strong> - DeepSeek: deepseek-chat,
+deepseek-reasoner - SiliconFlow: Qwen2.5-7B, Qwen2.5-72B, GLM-4-9B -
+OpenAI: GPT-4o-mini, GPT-4o - Moonshot: moonshot-v1-8k</p>
+<p><strong>支持的预设API端点（标注支持CORS的服务）：</strong> - ✓
+DeepSeek: https://api.deepseek.com - ✓ SiliconFlow:
+https://api.siliconflow.cn/v1 - ✓ Moonshot: https://api.moonshot.cn/v1 -
+OpenAI: https://api.openai.com/v1 - 阿里云:
+https://dashscope.aliyuncs.com/compatible-mode/v1</p>
+<p><strong>核心功能实现：</strong> 1.
+<strong>上下文构建</strong>（<code>buildContextMessage()</code>）： -
+收集当前公式信息 - 提取最近5条推导历史 - 构建LaTeX格式的上下文消息</p>
+<ol start="2" type="1">
+<li><p><strong>系统提示词设计</strong>：</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SYSTEM_PROMPT <span class="op">=</span> <span class="vs">`你是一个数学推导助手。你正在帮助用户进行数学公式的推导和计算。</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="vs">请用简洁清晰的语言回答用户的问题，使用 LaTeX 格式来表示数学公式。</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="vs">- 行内公式使用 $...$ 包裹</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="vs">- 独立公式块使用 $$...$$ 包裹</span></span></code></pre></div></li>
+<li><p><strong>API调用</strong>（<code>sendMessage()</code>）：</p>
+<ul>
+<li>使用非流式请求避免CORS问题</li>
+<li>支持温度参数（temperature: 0.7）</li>
+<li>最大token数限制（max_tokens: 2048）</li>
+<li>完整的错误处理和友好的错误提示</li>
+</ul></li>
+<li><p><strong>LaTeX内容渲染</strong>（<code>renderContent()</code>）：</p>
+<ul>
+<li>自动识别并分割<code>$$...$$</code>和<code>$...$</code>包裹的公式</li>
+<li>使用MathRenderer组件渲染公式</li>
+<li>处理换行和普通文本</li>
+</ul></li>
+<li><p><strong>快捷提示功能</strong>：</p>
+<ul>
+<li>预设常用问题：“下一步？”、“验证”、“解释”、“简化”</li>
+<li>点击即可快速填入问题</li>
+</ul></li>
+<li><p><strong>多状态管理</strong>：</p>
+<ul>
+<li>messages: 对话消息历史</li>
+<li>loading: 加载状态</li>
+<li>error: 错误信息显示</li>
+<li>showSettings: 设置面板开关</li>
+</ul></li>
+</ol>
+<p><strong>用户体验优化：</strong> - 加载时显示动画效果 -
+错误提示包含详细原因和建议 - 支持清空对话历史 - 显示当前使用的模型和端点
+- 响应式设计，支持移动端</p>
+<p>API请求通过标准OpenAI兼容格式发送到用户配置的API端点，支持多种服务商。AI的响应经过处理后返回给客户端，渲染为对话消息。AI对话与当前推导上下文关联，AI能够看到当前的公式和最近的推导历史，从而提供更精准的辅助建议。</p>
 <hr />
 <h2 id="三数据库设计与数据模型">三、数据库设计与数据模型</h2>
 <h3 id="数据库架构概述">3.1 数据库架构概述</h3>
 <p>MathFlow的数据库层基于PostgreSQL构建，利用Supabase平台提供的托管PostgreSQL服务。数据库设计遵循第三范式，确保数据的最小冗余和最大一致性。数据库
 schema
-定义在<code>supabase/tables/</code>目录下的SQL文件中，支持通过Supabase的数据库迁移功能进行版本控制[5]。</p>
-<p>系统的核心数据模型包括五个主要表：profiles（用户配置表）、derivations（推导记录表）、derivation_steps（推导步骤表）、ai_conversations（AI对话表）和math_templates（数学模板表）。每个表都包含标准的审计字段（created_at、updated_at）和主键字段（UUID类型），确保数据的唯一性和可追溯性。</p>
+定义在<code>supabase/migrations/</code>目录下的SQL迁移文件中，支持通过Supabase的数据库迁移功能进行版本控制[5]。</p>
+<p>系统的核心数据模型包括三个主要表：derivations（推导记录表）、derivation_steps（推导步骤表）和math_templates（数学模板表）。每个表都包含标准的审计字段（created_at、updated_at）和主键字段（UUID类型），确保数据的唯一性和可追溯性。</p>
 <h3 id="核心数据表设计">3.2 核心数据表设计</h3>
-<p>用户配置表（profiles）存储用户的个人信息和偏好设置。该表通过user_id字段与Supabase
-Auth系统关联，确保每个用户只有一条配置记录。表结构设计如下：</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> profiles (</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    user_id UUID <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">UNIQUE</span>,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    email TEXT,</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    display_name TEXT,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW(),</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    updated_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW()</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
 <p>推导记录表（derivations）存储用户创建的每个数学推导的元数据。title字段记录推导的名称，description字段可以存储推导的描述信息，user_id字段建立推导与用户的关联，支持多用户场景下的数据隔离。</p>
 <div class="sourceCode" id="cb3"><pre
 class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> derivations (</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    user_id UUID <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    title TEXT <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="st">&#39;Untitled&#39;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    title TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    description TEXT,</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW(),</span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    updated_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW()</span>
@@ -322,8 +601,8 @@ class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#c
 <p>推导步骤表（derivation_steps）是整个系统的核心数据表，存储每个推导的详细步骤。derivation_id字段关联到父表derivations，step_number字段表示步骤的顺序，input_latex和output_latex分别存储输入和输出的LaTeX公式，operation字段记录该步骤应用的操作类型，is_verified字段用于标记步骤是否已通过验证。</p>
 <div class="sourceCode" id="cb4"><pre
 class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> derivation_steps (</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    derivation_id UUID <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    derivation_id UUID <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">REFERENCES</span> derivations(<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">CASCADE</span>,</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    step_number <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    input_latex TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    output_latex TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
@@ -332,26 +611,16 @@ class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#c
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    is_verified <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">FALSE</span>,</span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW()</span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
-<p>AI对话表（ai_conversations）存储用户与AI助手的对话历史。每个对话与特定的推导关联，便于回顾AI辅助的过程。content字段存储消息内容，支持长文本。</p>
+<p>数学模板表（math_templates）存储预设的数学公式模板，供用户快速插入常用的数学表达式。模板按类别组织，支持用户扩展自定义模板。</p>
 <div class="sourceCode" id="cb5"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> ai_conversations (</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    derivation_id UUID,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    user_id UUID <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">role</span> TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    content TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> math_templates (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v4(),</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">category</span> TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    name TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    description TEXT,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    latex_template TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW()</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
-<p>数学模板表（math_templates）存储预设的数学公式模板，供用户快速插入常用的数学表达式。模板按类别组织，支持用户扩展自定义模板。</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> math_templates (</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">category</span> TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    name TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    description TEXT,</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    latex_template TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> NOW()</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
 <h3 id="数据库索引与性能优化">3.3 数据库索引与性能优化</h3>
 <p>为确保查询性能，项目在关键字段上创建了适当的索引。外键字段（如derivation_id、user_id）上创建了B-tree索引，支持快速关联查询。created_at字段上的索引支持按时间排序的查询操作。对于需要全文搜索的场景，可以考虑使用PostgreSQL的tsvector扩展。</p>
 <p>数据关系的设计遵循”父表驱动子表”的原则。当用户删除一个推导时，通过数据库的外键约束和级联删除设置，相关的步骤记录和对话记录会自动被删除，避免了数据不一致的问题。</p>
@@ -360,24 +629,24 @@ class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#c
 <h3 id="数学公式渲染组件实现">4.1 数学公式渲染组件实现</h3>
 <p>MathRenderer组件是MathFlow的核心渲染组件，负责将LaTeX格式的数学公式转换为浏览器可显示的HTML内容。组件基于KaTeX库实现，利用React的useRef钩子直接操作DOM节点，以获得最佳的性能表现。</p>
 <p>组件的核心逻辑是useEffect钩子中的渲染逻辑。当latex属性变化时，组件尝试使用KaTeX渲染公式，捕获并处理可能的渲染错误。错误处理机制确保即使输入了无效的LaTeX语法，页面也不会崩溃，而是显示友好的错误提示。</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">useEffect</span>(() <span class="kw">=&gt;</span> {</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (containerRef<span class="op">.</span><span class="at">current</span> <span class="op">&amp;&amp;</span> latex) {</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> {</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>      katex<span class="op">.</span><span class="fu">render</span>(latex<span class="op">,</span> containerRef<span class="op">.</span><span class="at">current</span><span class="op">,</span> {</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        displayMode<span class="op">,</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        throwOnError<span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        errorColor<span class="op">:</span> <span class="st">&#39;#ef4444&#39;</span><span class="op">,</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        trust<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        strict<span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>      })<span class="op">;</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">catch</span> (error) {</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (containerRef<span class="op">.</span><span class="at">current</span>) {</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        containerRef<span class="op">.</span><span class="at">current</span><span class="op">.</span><span class="at">innerHTML</span> <span class="op">=</span> <span class="vs">`&lt;span class=&quot;text-red-500 text-sm&quot;&gt;Invalid LaTeX: </span><span class="sc">${</span>latex<span class="sc">}</span><span class="vs">&lt;/span&gt;`</span><span class="op">;</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>}<span class="op">,</span> [latex<span class="op">,</span> displayMode])<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">useEffect</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (containerRef<span class="op">.</span><span class="at">current</span> <span class="op">&amp;&amp;</span> latex) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>      katex<span class="op">.</span><span class="fu">render</span>(latex<span class="op">,</span> containerRef<span class="op">.</span><span class="at">current</span><span class="op">,</span> {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        displayMode<span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        throwOnError<span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        errorColor<span class="op">:</span> <span class="st">&#39;#ef4444&#39;</span><span class="op">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        trust<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        strict<span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      })<span class="op">;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">catch</span> (error) {</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (containerRef<span class="op">.</span><span class="at">current</span>) {</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        containerRef<span class="op">.</span><span class="at">current</span><span class="op">.</span><span class="at">innerHTML</span> <span class="op">=</span> <span class="vs">`&lt;span class=&quot;text-red-500 text-sm&quot;&gt;Invalid LaTeX: </span><span class="sc">${</span>latex<span class="sc">}</span><span class="vs">&lt;/span&gt;`</span><span class="op">;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>}<span class="op">,</span> [latex<span class="op">,</span> displayMode])<span class="op">;</span></span></code></pre></div>
 <p>组件支持行内模式和展示模式两种渲染方式。行内模式用于在普通文本中嵌入数学符号，展示模式用于独立成行的公式。通过设置不同的displayMode参数，KaTeX会自动调整公式的显示样式和间距。</p>
 <h3 id="推导编辑器页面实现">4.2 推导编辑器页面实现</h3>
 <p>推导编辑器（Editor页面）是MathFlow的主要工作界面，集成了推导步骤管理、公式输入、AI辅助等功能模块。页面采用三栏布局：左侧是推导步骤列表，中间是输入区域，右侧是可切换的操作面板或AI对话面板。</p>
@@ -385,21 +654,58 @@ class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-
 <p>步骤的添加流程包括：验证输入不为空、创建新步骤对象、添加到步骤数组、更新历史记录、重置输入框。步骤的编辑和删除操作同样会触发历史记录的更新，确保撤销/重做功能的完整性。</p>
 <p>导出功能支持将推导过程导出为Markdown格式。导出内容包括推导标题、每个步骤的编号、操作类型和渲染后的公式。生成的Markdown文件可以直接在文档编辑工具中打开，或上传到版本控制系统进行管理。</p>
 <h3 id="ai对话组件实现">4.3 AI对话组件实现</h3>
-<p>AIChat组件实现了与AI助手的交互功能，是MathFlow智能化的核心体现。组件支持配置API密钥和选择AI模型，目前支持OpenAI的GPT-4系列模型和Anthropic的Claude系列模型。</p>
-<p>对话上下文的构建是AIChat的关键技术点。组件会收集当前的公式状态和推导历史，构建一个系统提示词（System
-Prompt），告知AI当前的工作环境和任务目标。这个提示词用中文编写，明确指出AI是一个专业的数学推导助手，需要使用LaTeX格式回答问题。</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> systemPrompt <span class="op">=</span> <span class="vs">`你是一个专业的数学推导助手。你的任务是帮助用户理解和完成数学推导过程。</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="vs">当前公式: </span><span class="sc">${</span>currentFormula <span class="op">||</span> <span class="st">&#39;无&#39;</span><span class="sc">}</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="vs">推导历史:</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="sc">${</span>derivationHistory<span class="op">?.</span><span class="fu">map</span>((step<span class="op">:</span> { operation<span class="op">:</span> <span class="dt">string</span><span class="op">;</span> latex<span class="op">:</span> <span class="dt">string</span> }<span class="op">,</span> i<span class="op">:</span> <span class="dt">number</span>) <span class="kw">=&gt;</span> </span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="vs">`步骤</span><span class="sc">${</span>i <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="vs">: </span><span class="sc">${</span>step<span class="op">.</span><span class="at">operation</span><span class="sc">}</span><span class="vs"> -&gt; </span><span class="sc">${</span>step<span class="op">.</span><span class="at">latex</span><span class="sc">}</span><span class="vs">`</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>)<span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;</span><span class="sc">\n</span><span class="st">&#39;</span>) <span class="op">||</span> <span class="st">&#39;无历史记录&#39;</span><span class="sc">}</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="vs">请基于上下文提供精确的数学指导。使用LaTeX格式表示公式（用$...$包裹行内公式，$$...$$包裹独立公式）。`</span><span class="op">;</span></span></code></pre></div>
-<p>AI响应内容的渲染需要特殊处理。由于AI可能返回包含LaTeX公式的混合文本，AIChat组件实现了内容解析逻辑，将响应文本按<code>$$...$$</code>和<code>$...$</code>分割，交替使用MathRenderer组件渲染公式和普通文本组件渲染文字。</p>
+<p>AIChat组件实现了与AI助手的交互功能，是MathFlow智能化的核心体现。组件深度集成在数学推导流程中，提供上下文感知的AI辅助。</p>
+<p><strong>组件结构与功能：</strong> 1. <strong>配置管理界面</strong>：
+- API Key输入（密码保护） - API端点配置（支持预设和自定义） -
+模型选择（预设8种常用模型） - 设置持久化到localStorage</p>
+<ol start="2" type="1">
+<li><p><strong>对话上下文构建</strong>：
+<code>buildContextMessage()</code>函数收集当前推导的上下文信息：</p>
+<ul>
+<li>当前公式（如有）</li>
+<li>最近5条推导历史</li>
+<li>包含操作类型和LaTeX公式</li>
+</ul></li>
+<li><p><strong>系统提示词设计</strong>（<code>SYSTEM_PROMPT</code>）：</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> SYSTEM_PROMPT <span class="op">=</span> <span class="vs">`你是一个数学推导助手。你正在帮助用户进行数学公式的推导和计算。</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="vs">请用简洁清晰的语言回答用户的问题，使用 LaTeX 格式来表示数学公式。</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="vs">- 行内公式使用 $...$ 包裹</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="vs">- 独立公式块使用 $$...$$ 包裹</span></span></code></pre></div></li>
+<li><p><strong>API调用实现</strong>（<code>sendMessage()</code>）：</p>
+<ul>
+<li>使用非流式请求避免CORS问题</li>
+<li>标准OpenAI兼容API格式</li>
+<li>参数：temperature: 0.7, max_tokens: 2048, stream: false</li>
+<li>完整的错误处理和友好提示</li>
+</ul></li>
+<li><p><strong>LaTeX内容渲染</strong>（<code>renderContent()</code>）：</p>
+<ul>
+<li>正则分割：<code>/(\$\$[\s\S]*?\$\$|\$[^$\n]+\$)/</code></li>
+<li>按分隔符交替渲染：MathRenderer渲染公式，span渲染文字</li>
+<li>支持行内公式（<span
+class="math inline">）<em>和</em><em>块</em><em>级</em><em>公</em><em>式</em>（</span>$）</li>
+</ul></li>
+<li><p><strong>快捷提示功能</strong>：</p>
+<ul>
+<li>“下一步？”：询问下一步推导方法</li>
+<li>“验证”：验证推导正确性</li>
+<li>“解释”：解释公式含义</li>
+<li>“简化”：询问简化方法</li>
+</ul></li>
+<li><p><strong>用户体验优化</strong>：</p>
+<ul>
+<li>加载动画效果（Loader2图标）</li>
+<li>清空对话功能</li>
+<li>错误提示面板（可关闭）</li>
+<li>显示当前模型和端点信息</li>
+<li>响应式消息布局</li>
+</ul></li>
+</ol>
+<p><strong>关键技术点：</strong> -
+使用<code>useRef</code>管理消息容器，实现自动滚动 -
+错误信息包含CORS问题诊断和建议 - 快捷填充问题功能，提升交互效率 -
+完整的TypeScript类型定义</p>
 <h3 id="操作面板组件实现">4.4 操作面板组件实现</h3>
 <p>OperationPanel组件提供了数学操作的快捷入口，将常用的数学操作分类组织，用户可以快速应用这些操作而无需手动输入复杂的LaTeX命令。</p>
 <p>操作分类涵盖基础代数、微积分、线性代数和三角函数四大类。基础代数操作包括移项、合并同类项、因式分解、展开和化简；微积分操作包括求导、积分（不定积分和定积分）、求极限和偏导数；线性代数操作包括转置、逆矩阵、行列式和迹；三角函数操作包括正弦、余弦和正切。</p>
@@ -423,63 +729,63 @@ Studio管理界面）。每个服务都是独立的容器，通过自定义网�
 <h3 id="前端服务docker配置">5.2 前端服务Docker配置</h3>
 <p>前端服务基于Node.js 18
 Alpine镜像构建，采用多阶段构建策略优化镜像大小。第一阶段（builder阶段）安装依赖、编译应用；第二阶段（production阶段）仅包含编译产物和Nginx服务器。</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:18-alpine <span class="kw">AS</span> builder</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install <span class="at">-g</span> pnpm</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package.json pnpm-lock.yaml ./</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pnpm</span> install <span class="at">--frozen-lockfile</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pnpm</span> build</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nginx:alpine</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/dist /usr/share/nginx/html</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> nginx.conf /etc/nginx/conf.d/default.conf</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3000</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;nginx&quot;</span>, <span class="st">&quot;-g&quot;</span>, <span class="st">&quot;daemon off;&quot;</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:18-alpine <span class="kw">AS</span> builder</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install <span class="at">-g</span> pnpm</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package.json pnpm-lock.yaml ./</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pnpm</span> install <span class="at">--frozen-lockfile</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pnpm</span> build</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nginx:alpine</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/dist /usr/share/nginx/html</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> nginx.conf /etc/nginx/conf.d/default.conf</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3000</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;nginx&quot;</span>, <span class="st">&quot;-g&quot;</span>, <span class="st">&quot;daemon off;&quot;</span>]</span></code></pre></div>
 <p>Nginx配置实现了多个关键功能：静态资源长期缓存、基于文件扩展名的MIME类型设置、安全响应头（X-Frame-Options、X-XSS-Protection等）、以及单页应用的路由回退（所有未知路径返回index.html）。</p>
 <h3 id="后端服务docker配置">5.3 后端服务Docker配置</h3>
 <p>后端服务基于Node.js 18 Alpine镜像，提供简单的Express.js
 API服务。服务包含健康检查端点和AI聊天代理功能，支持调用外部AI API。</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:18-alpine</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apk</span> add <span class="at">--no-cache</span> python3 make g++</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> supabase/package*.json ./</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install express cors</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> supabase/ ./supabase/</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 创建API服务器</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">echo</span> <span class="st">&#39;const express = require(&quot;express&quot;);\</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="st">const cors = require(&quot;cors&quot;);\</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="st">const app = express();\</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="st">const port = 3001;\</span></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="st">\</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="st">app.use(cors());\</span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="st">app.use(express.json());\</span></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="st">\</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="st">app.get(&quot;/health&quot;, (req, res) =&gt; {\</span></span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="st">  res.json({ status: &quot;ok&quot;, service: &quot;backend-api&quot; });\</span></span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="st">});\</span></span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="st">\</span></span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="st">app.listen(port, () =&gt; {\</span></span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="st">  console.log(`Backend API server running on port ${port}`);\</span></span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="st">});&#39;</span> <span class="op">&gt;</span> server.js</span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3001</span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;server.js&quot;</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:18-alpine</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apk</span> add <span class="at">--no-cache</span> python3 make g++</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> supabase/package*.json ./</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install express cors</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> supabase/ ./supabase/</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 创建API服务器</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">echo</span> <span class="st">&#39;const express = require(&quot;express&quot;);\</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="st">const cors = require(&quot;cors&quot;);\</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="st">const app = express();\</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="st">const port = 3001;\</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="st">\</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="st">app.use(cors());\</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="st">app.use(express.json());\</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="st">\</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="st">app.get(&quot;/health&quot;, (req, res) =&gt; {\</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="st">  res.json({ status: &quot;ok&quot;, service: &quot;backend-api&quot; });\</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="st">});\</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="st">\</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="st">app.listen(port, () =&gt; {\</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="st">  console.log(`Backend API server running on port ${port}`);\</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="st">});&#39;</span> <span class="op">&gt;</span> server.js</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3001</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;server.js&quot;</span>]</span></code></pre></div>
 <h3 id="数据库服务配置">5.4 数据库服务配置</h3>
 <p>数据库服务使用Supabase官方提供的PostgreSQL镜像（supabase/postgres:15.1.0.117）。该镜像预装了PostgreSQL扩展（uuid-ossp、pgcrypto、pg_trgm等），并集成了PostgREST等Supabase组件。</p>
 <p>数据库初始化通过挂载初始化脚本实现。<code>docker-entrypoint-initdb.d</code>目录下的SQL脚本会在容器首次启动时自动执行，创建所需的表结构、索引和触发器。</p>
@@ -553,43 +859,43 @@ SSD存储。实际资源需求取决于用户规模和并发请求量。</p>
 <p>第一步，克隆项目代码并进入项目目录。确保所有配置文件和源代码都已正确获取。</p>
 <p>第二步，配置环境变量。复制<code>.env.example</code>文件为<code>.env</code>，编辑该文件设置必要的配置项，包括数据库密码、Supabase密钥、JWT密钥等。密钥应使用足够长度的随机字符串，避免使用默认或弱密码。</p>
 <p>第三步，启动服务。使用以下命令启动所有服务：</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div>
 <p>第四步，验证部署。执行健康检查命令确认所有服务正常运行：</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> ps</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> ps</span></code></pre></div>
 <h3 id="服务访问地址">8.3 服务访问地址</h3>
 <p>部署完成后，各服务的访问地址如下：</p>
 <table>
 <thead>
-<tr class="header">
+<tr>
 <th>服务</th>
 <th>地址</th>
 <th>描述</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>前端应用</td>
 <td>http://localhost:3000</td>
 <td>React应用主界面</td>
 </tr>
-<tr class="even">
+<tr>
 <td>后端API</td>
 <td>http://localhost:3001</td>
 <td>API服务健康检查</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>数据库</td>
 <td>localhost:5432</td>
 <td>PostgreSQL数据库连接</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Redis</td>
 <td>localhost:6379</td>
 <td>Redis缓存服务</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Supabase Studio</td>
 <td>http://localhost:54323</td>
 <td>数据库管理界面</td>
@@ -656,9 +962,8 @@ Compose官方文档</a> - 高可靠性 - 官方文档</p>
 <p>[8] <a href="mathflow_test_report.md">MathFlow应用测试报告</a> -
 中等可靠性 - 项目内部测试文档</p>
 <hr />
-<p><strong>项目地址</strong>:
-https://9q8jheyk2xkt.space.minimaxi.com</p>
-<p><strong>开发团队</strong>: MiniMax Agent</p>
-<p><strong>报告生成时间</strong>: 2025年12月</p>
+<p><strong>项目地址</strong>: github</p>
+<p><strong>开发团队</strong>: EF_Cosmos</p>
+<p><strong>报告时间</strong>: 2025年12月</p>
 </body>
 </html>

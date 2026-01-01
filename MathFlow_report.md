@@ -9,7 +9,7 @@ MathFlow是一个创新性的AI辅助数学推导网页应用，旨在解决传�
 本报告将从问题定义、技术架构、实现细节、部署方案、项目特色等多个维度进行详细阐述，全面展示该项目的技术深度和创新价值。
 
 ---
-![]()
+
 ## 一、项目概述与研究动机
 
 ### 1.1 传统数学学习工具的局限性分析
@@ -40,15 +40,17 @@ MathFlow项目的应用价值体现在多个层面。对于学生群体而言，
 
 技术选型是项目成功的基础，MathFlow在技术选型上遵循"成熟稳定、社区活跃、生态完善"的原则，确保项目的长期可维护性和扩展性。
 
-前端技术栈选用了React 18作为UI框架，这一选择基于多方面的考量。React的组件化架构非常适合构建复杂的交互式界面，MathFlow的推导步骤卡片、AI对话面板、数学公式编辑器等都可以抽象为独立的React组件，实现代码的高内聚低耦合。React 18引入的并发渲染特性能够确保大型数学公式渲染时不阻塞用户界面，提升用户体验。此外，React拥有庞大的生态系统，MathFlow项目中使用的状态管理、路由管理、UI组件库等都有成熟的解决方案[1]。
+前端技术栈选用了React 18.3.1作为UI框架，这一选择基于多方面的考量。React的组件化架构非常适合构建复杂的交互式界面，MathFlow的推导步骤卡片、AI对话面板、数学公式编辑器等都可以抽象为独立的React组件，实现代码的高内聚低耦合。React 18引入的并发渲染特性能够确保大型数学公式渲染时不阻塞用户界面，提升用户体验。此外，React拥有庞大的生态系统，MathFlow项目中使用的状态管理、路由管理、UI组件库等都有成熟的解决方案[1]。
 
-TypeScript的引入是另一个关键决策。作为JavaScript的超集，TypeScript提供了静态类型检查能力，能够在编译时发现潜在的代码错误，大大降低了运行时出错的风险。对于MathFlow这样涉及复杂数据流（推导步骤、用户会话、AI对话等）的应用，TypeScript的类型系统能够清晰地定义数据结构的形状，提高代码的可读性和可维护性。
+TypeScript 5.6.2的引入是另一个关键决策。作为JavaScript的超集，TypeScript提供了静态类型检查能力，能够在编译时发现潜在的代码错误，大大降低了运行时出错的风险。对于MathFlow这样涉及复杂数据流（推导步骤、用户会话、AI对话等）的应用，TypeScript的类型系统能够清晰地定义数据结构的形状，提高代码的可读性和可维护性。
 
-Vite作为构建工具，相比传统的Webpack具有显著的性能优势。Vite利用浏览器原生的ES模块支持，在开发模式下实现即时的冷启动和热更新；在生产模式下，Rollup打包器能够生成高度优化的静态资源。这对于MathFlow这样需要频繁更新和迭代的项目来说，开发效率的提升是显而易见的[2]。
+Vite 6.0.1作为构建工具，相比传统的Webpack具有显著的性能优势。Vite利用浏览器原生的ES模块支持，在开发模式下实现即时的冷启动和热更新；在生产模式下，Rollup打包器能够生成高度优化的静态资源。这对于MathFlow这样需要频繁更新和迭代的项目来说，开发效率的提升是显而易见的[2]。
 
-KaTeX作为数学公式渲染引擎，是MathFlow的核心依赖之一。相比MathJax，KaTeX具有更快的渲染速度和更小的包体积，能够实现数学公式的即时渲染而不会出现明显的延迟。虽然KaTeX支持的LaTeX命令集相对有限，但对于MathFlow的目标使用场景——基础数学推导而言已经完全足够[3]。
+KaTeX 0.16.9作为数学公式渲染引擎，是MathFlow的核心依赖之一。相比MathJax，KaTeX具有更快的渲染速度和更小的包体积，能够实现数学公式的即时渲染而不会出现明显的延迟。虽然KaTeX支持的LaTeX命令集相对有限，但对于MathFlow的目标使用场景——基础数学推导而言已经完全足够[3]。
 
-后端服务采用Supabase平台，这是一个开源的Firebase替代方案。Supabase基于PostgreSQL数据库，提供实时订阅、身份认证、边缘函数（Edge Functions）等功能，非常适合构建现代化的全栈应用。选择Supabase的主要考虑包括：PostgreSQL的可靠性和功能丰富性、实时数据同步能力、以及与React应用的良好集成体验[4]。
+UI组件库方面，项目采用了TailwindCSS v3.4.16作为原子化CSS框架，结合Radix UI组件库实现无障碍访问的UI组件，以及Lucide React作为现代化图标库。这些技术栈的组合确保了界面的一致性、美观性和可访问性。
+
+后端服务采用Supabase 2.45.0平台，这是一个开源的Firebase替代方案。Supabase基于PostgreSQL数据库，提供实时订阅、身份认证、边缘函数（Edge Functions）等功能，非常适合构建现代化的全栈应用。选择Supabase的主要考虑包括：PostgreSQL的可靠性和功能丰富性、实时数据同步能力、以及与React应用的良好集成体验[4]。
 
 ### 2.2 系统整体架构设计
 
@@ -71,19 +73,30 @@ src/
 ├── components/        # 可复用组件
 │   ├── AIChat.tsx     # AI对话组件
 │   ├── MathRenderer.tsx # 数学公式渲染组件
-│   └── OperationPanel.tsx # 操作面板组件
+│   ├── ErrorBoundary.tsx # 错误边界组件
+│   └── ScratchPad/    # 草稿纸（核心推导组件）
+│       ├── ScratchPad.tsx # 主草稿纸组件
+│       ├── StepCard.tsx # 步骤卡片组件
+│       ├── InteractiveFormula.tsx # 交互式公式组件
+│       └── operations/ # 各种操作组件
+├── hooks/             # React Hooks
+│   └── use-mobile.tsx # 移动端检测Hook
 ├── lib/               # 工具库和配置
-│   ├── auth.ts        # 认证相关逻辑
-│   └── supabase.ts    # Supabase客户端配置
+│   ├── auth.tsx       # 认证相关逻辑
+│   ├── supabase.ts    # Supabase客户端配置
+│   ├── equation.ts    # LaTeX方程解析和处理核心库
+│   └── utils.ts       # 通用工具函数
 ├── pages/             # 页面组件
 │   ├── Dashboard.tsx  # 仪表板页面
-│   ├── Editor.tsx     # 推导编辑器页面
+│   ├── ScratchPadPage.tsx # 草稿纸页面（核心推导界面）
+│   ├── Editor.tsx     # 旧版编辑器（已重定向到ScratchPadPage）
 │   └── Login.tsx      # 登录页面
+├── types/             # TypeScript类型定义
 ├── App.tsx            # 应用根组件
 └── main.tsx           # 应用入口
 ```
 
-页面路由设计遵循SPA的最佳实践。`/`路径映射到仪表板页面，展示用户的推导历史和模板库；`/editor/:id?`路径映射到推导编辑器页面，其中`:id`参数是可选的，用于加载已有的推导；`/login`路径映射到登录/注册页面。路由配置通过React Router v6实现，支持嵌套路由和路由守卫。
+页面路由设计遵循SPA的最佳实践。`/`路径映射到仪表板页面，展示用户的推导历史和模板库；`/scratchpad/:id?`路径映射到草稿纸页面（核心推导界面），其中`:id`参数是可选的，用于加载已有的推导；`/editor/:id?`路径保留向后兼容，会重定向到ScratchPadPage；`/login`路径映射到登录/注册页面。路由配置通过React Router v6实现，支持嵌套路由和路由守卫。
 
 状态管理采用混合策略。局部状态使用React的useState和useReducer钩子管理；跨组件共享的状态通过Context API提供；需要持久化的状态（如用户会话信息）使用localStorage存储。这种设计避免了引入额外的状态管理库（如Redux），降低了项目的复杂度。
 
@@ -91,11 +104,162 @@ src/
 
 MathFlow的核心组件可以划分为三条主要的数据流：推导步骤流、用户认证流和AI对话流。
 
-推导步骤流是系统的主数据流。用户输入LaTeX公式后，MathRenderer组件将公式渲染为视觉化的数学表达式；当用户确认添加步骤时，步骤数据被添加到本地状态，并可选择性地同步到Supabase数据库。编辑器页面维护一个推导步骤数组，每个步骤包含输入公式、输出公式、操作类型等字段。步骤的添加、修改、删除操作都会触发历史记录的更新，支持撤销/重做功能。
+#### 方程解析与处理核心库
+
+MathFlow的核心创新在于实现了真正的LaTeX方程解析和处理能力。`lib/equation.ts`文件提供了完整的方程处理功能，包括以下核心函数和数据类型：
+
+**数据类型定义：**
+- `ParsedEquation`: 方程解析结果，包含lhs（左边）、rhs（右边）、hasEquals（是否有等号）
+- `ParsedTerm`: 单个分析项，包含sign（正负号）、latex（不含符号的LaTeX表达式）
+- `ParsedCoefficient`: 项的系数解析结果，包含coefficient（系数值）、variable（变量部分）
+
+**核心功能函数：**
+- **方程分割**（`splitEquation`）：将LaTeX方程按等号分割为左右两边，支持嵌套括号的正确解析，使用`scanTopLevel`函数跟踪括号层级深度
+- **项的分割**（`splitTerms`）：将表达式按加减号分割为独立的项，正确处理嵌套结构中的符号，自动识别前导符号
+- **系数解析**（`parseTermCoefficient`）：解析每一项的系数和变量部分，支持多种格式：  
+  - 纯数字："3" → {coefficient: 3, variable: ""}  
+  - 带变量的项："2x" → {coefficient: 2, variable: "x"}  
+  - 缺省系数："x" → {coefficient: 1, variable: "x"}  
+  - 带负号："-2x^2" → {coefficient: 2, variable: "x^2"}（符号由ParsedTerm.sign管理）
+- **同类项识别**（`findLikeTerms`）：基于`getTermTypeKey`函数计算项的类型键，识别所有同类项索引
+- **移项操作**（`moveTermInEquation`）：将方程一边的项移到另一边，自动使用`flipSign`函数翻转符号，返回完整的移动信息和结果方程
+- **合并同类项**（`combineLikeTermInEquation`）：智能合并同类项，使用`buildCombinedTerm`函数正确构建合并后的项，处理系数为1的情况
+- **格式化函数**（`formatTerms`）：将分析后的项数组转换为LaTeX字符串
+- **辅助函数**（`stripOuterSpaces`、`scanTopLevel`、`flipSign`）：处理空格、扫描括号层级、翻转符号等通用操作
+
+这些函数构成了交互式数学推导的基础，让用户能够点击公式中的具体项来执行操作，而不是仅仅进行文本替换。系统支持完整的等式两边操作，自动处理符号变化，确保数学推导的正确性。
+
+#### 推导步骤流
+
+推导步骤流是系统的主数据流。ScratchPad组件是核心推导界面，实现了完整的交互式数学推导工作流程。
+
+**状态管理：**
+- `steps`: 存储所有推导步骤的数组，每个步骤包含id、stepNumber、latex、operation、timestamp等字段
+- `history`: 历史记录数组，使用快照+指针的设计实现撤销/重做功能
+- `historyIndex`: 当前历史记录指针位置
+- `currentInput`: 当前输入框的内容
+- `activeAction`: 当前激活的交互模式（移项move/合并combine等）
+- `expandedSteps`: 展开的步骤集合
+
+**核心功能实现：**
+- **addStep()**: 添加新步骤，自动更新历史记录指针
+- **editStep()**: 编辑指定步骤，触发历史记录快照创建
+- **deleteStep()**: 删除步骤并自动重新编号
+- **useStepAsBase()**: 从指定历史步骤继续推导，清除后续步骤
+- **clearAll()**: 清空所有步骤和输入
+- **undo()**: 撤销操作（Ctrl+Z支持）
+- **redo()**: 重做操作（Ctrl+Shift+Z支持）
+
+**交互式推导特性：**
+与普通编辑器不同，MathFlow的ScratchPad实现了真正的交互式推导：
+
+1. **项级别的交互操作**：
+   - 点击公式中的任意项来执行移项操作（M键切换移项模式）
+   - 点击同类项进行合并操作（C键切换合并模式）
+   - 支持操作模式状态显示和取消（Escape键）
+
+2. `handleTermAction()`: 处理项级别的操作
+   - 移项操作：调用`moveTermInEquation`，将项从等式一边移到另一边
+   - 合并操作：调用`combineLikeTermInEquation`，智能合并所有同类项
+
+3. **两边同时操作**：
+   `handleBothSidesOperation()` 支持对等式两边同时执行加、减、乘、除操作：
+   - 加法：两边同时加同一值
+   - 减法：两边同时减同一值
+   - 乘法：两边同时乘同一值（使用\cdot）
+   - 除法：两边同时除同一值（使用分数形式）
+
+4. **微积分操作**：
+   `handleCalculusOperation()` 支持对公式或等式应用微积分变换，自动识别等式两边并分别操作
+
+5. **快捷符号插入**：
+   `insertAtCursor()` 支持在光标位置插入LaTeX符号，自动调整光标位置
+
+**历史记录管理：**
+- 采用快照+指针设计，每次状态变化创建完整状态快照
+- 支持任意次数的撤销和重做
+- 初始化步骤变化时自动同步外部数据
+- 自动滚动到底部查看最新步骤
+
+**键盘快捷键支持：**
+- Ctrl/Cmd + Z: 撤销
+- Ctrl/Cmd + Shift + Z: 重做  
+- M: 切换移项模式
+- C: 切换合并模式
+- Escape: 取消当前操作模式
+- Shift+Enter: 添加步骤
+
+用户可以从任意历史步骤继续推导，系统会清除该步骤之后的所有步骤并开始新的分支，确保推导历史的清晰和可追溯性。
+
+#### 用户认证流
 
 用户认证流负责处理用户的登录和注册。应用使用Supabase Auth服务进行身份管理，支持邮箱/密码认证。认证状态通过AuthContext向下传递，所有需要认证的路由都被包裹在PrivateRoute组件中进行保护。登录成功后，用户的身份信息被存储在session中，后续的API请求会自动附加认证令牌。
 
-AI对话流处理用户与AI助手的交互。当用户在AIChat组件中发送消息时，请求被发送到Supabase Edge Function，该函数负责调用外部AI API（如OpenAI或Anthropic）。AI的响应经过处理后返回给客户端，渲染为对话消息。AI对话与当前推导上下文关联，AI能够看到之前的推导历史，从而提供更精准的辅助建议。
+#### AI对话流
+
+AI对话流处理用户与AI助手的交互。AIChat组件是核心对话组件，实现了完整的AI辅助功能。
+
+**配置管理：**
+- 支持自定义API Key、API端点和模型名称
+- 配置保存在localStorage中，持久化存储
+- 默认API端点：https://api.deepseek.com
+
+**支持的预设模型：**
+- DeepSeek: deepseek-chat, deepseek-reasoner
+- SiliconFlow: Qwen2.5-7B, Qwen2.5-72B, GLM-4-9B
+- OpenAI: GPT-4o-mini, GPT-4o
+- Moonshot: moonshot-v1-8k
+
+**支持的预设API端点（标注支持CORS的服务）：**
+- ✓ DeepSeek: https://api.deepseek.com
+- ✓ SiliconFlow: https://api.siliconflow.cn/v1
+- ✓ Moonshot: https://api.moonshot.cn/v1
+- OpenAI: https://api.openai.com/v1
+- 阿里云: https://dashscope.aliyuncs.com/compatible-mode/v1
+
+**核心功能实现：**
+1. **上下文构建**（`buildContextMessage()`）：
+   - 收集当前公式信息
+   - 提取最近5条推导历史
+   - 构建LaTeX格式的上下文消息
+
+2. **系统提示词设计**：
+   ```typescript
+   const SYSTEM_PROMPT = `你是一个数学推导助手。你正在帮助用户进行数学公式的推导和计算。
+   请用简洁清晰的语言回答用户的问题，使用 LaTeX 格式来表示数学公式。
+   - 行内公式使用 $...$ 包裹
+   - 独立公式块使用 $$...$$ 包裹
+   ```
+
+3. **API调用**（`sendMessage()`）：
+   - 使用非流式请求避免CORS问题
+   - 支持温度参数（temperature: 0.7）
+   - 最大token数限制（max_tokens: 2048）
+   - 完整的错误处理和友好的错误提示
+
+4. **LaTeX内容渲染**（`renderContent()`）：
+   - 自动识别并分割`$$...$$`和`$...$`包裹的公式
+   - 使用MathRenderer组件渲染公式
+   - 处理换行和普通文本
+
+5. **快捷提示功能**：
+   - 预设常用问题："下一步？"、"验证"、"解释"、"简化"
+   - 点击即可快速填入问题
+
+6. **多状态管理**：
+   - messages: 对话消息历史
+   - loading: 加载状态
+   - error: 错误信息显示
+   - showSettings: 设置面板开关
+
+**用户体验优化：**
+- 加载时显示动画效果
+- 错误提示包含详细原因和建议
+- 支持清空对话历史
+- 显示当前使用的模型和端点
+- 响应式设计，支持移动端
+
+API请求通过标准OpenAI兼容格式发送到用户配置的API端点，支持多种服务商。AI的响应经过处理后返回给客户端，渲染为对话消息。AI对话与当前推导上下文关联，AI能够看到当前的公式和最近的推导历史，从而提供更精准的辅助建议。
 
 ---
 
@@ -103,32 +267,19 @@ AI对话流处理用户与AI助手的交互。当用户在AIChat组件中发送�
 
 ### 3.1 数据库架构概述
 
-MathFlow的数据库层基于PostgreSQL构建，利用Supabase平台提供的托管PostgreSQL服务。数据库设计遵循第三范式，确保数据的最小冗余和最大一致性。数据库 schema 定义在`supabase/tables/`目录下的SQL文件中，支持通过Supabase的数据库迁移功能进行版本控制[5]。
+MathFlow的数据库层基于PostgreSQL构建，利用Supabase平台提供的托管PostgreSQL服务。数据库设计遵循第三范式，确保数据的最小冗余和最大一致性。数据库 schema 定义在`supabase/migrations/`目录下的SQL迁移文件中，支持通过Supabase的数据库迁移功能进行版本控制[5]。
 
-系统的核心数据模型包括五个主要表：profiles（用户配置表）、derivations（推导记录表）、derivation_steps（推导步骤表）、ai_conversations（AI对话表）和math_templates（数学模板表）。每个表都包含标准的审计字段（created_at、updated_at）和主键字段（UUID类型），确保数据的唯一性和可追溯性。
+系统的核心数据模型包括三个主要表：derivations（推导记录表）、derivation_steps（推导步骤表）和math_templates（数学模板表）。每个表都包含标准的审计字段（created_at、updated_at）和主键字段（UUID类型），确保数据的唯一性和可追溯性。
 
 ### 3.2 核心数据表设计
-
-用户配置表（profiles）存储用户的个人信息和偏好设置。该表通过user_id字段与Supabase Auth系统关联，确保每个用户只有一条配置记录。表结构设计如下：
-
-```sql
-CREATE TABLE profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE,
-    email TEXT,
-    display_name TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
 
 推导记录表（derivations）存储用户创建的每个数学推导的元数据。title字段记录推导的名称，description字段可以存储推导的描述信息，user_id字段建立推导与用户的关联，支持多用户场景下的数据隔离。
 
 ```sql
 CREATE TABLE derivations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL,
-    title TEXT NOT NULL DEFAULT 'Untitled',
+    title TEXT NOT NULL,
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -139,8 +290,8 @@ CREATE TABLE derivations (
 
 ```sql
 CREATE TABLE derivation_steps (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    derivation_id UUID NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    derivation_id UUID NOT NULL REFERENCES derivations(id) ON DELETE CASCADE,
     step_number INTEGER NOT NULL,
     input_latex TEXT NOT NULL,
     output_latex TEXT NOT NULL,
@@ -151,24 +302,11 @@ CREATE TABLE derivation_steps (
 );
 ```
 
-AI对话表（ai_conversations）存储用户与AI助手的对话历史。每个对话与特定的推导关联，便于回顾AI辅助的过程。content字段存储消息内容，支持长文本。
-
-```sql
-CREATE TABLE ai_conversations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    derivation_id UUID,
-    user_id UUID NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
 数学模板表（math_templates）存储预设的数学公式模板，供用户快速插入常用的数学表达式。模板按类别组织，支持用户扩展自定义模板。
 
 ```sql
 CREATE TABLE math_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     category TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
@@ -227,24 +365,59 @@ useEffect(() => {
 
 ### 4.3 AI对话组件实现
 
-AIChat组件实现了与AI助手的交互功能，是MathFlow智能化的核心体现。组件支持配置API密钥和选择AI模型，目前支持OpenAI的GPT-4系列模型和Anthropic的Claude系列模型。
+AIChat组件实现了与AI助手的交互功能，是MathFlow智能化的核心体现。组件深度集成在数学推导流程中，提供上下文感知的AI辅助。
 
-对话上下文的构建是AIChat的关键技术点。组件会收集当前的公式状态和推导历史，构建一个系统提示词（System Prompt），告知AI当前的工作环境和任务目标。这个提示词用中文编写，明确指出AI是一个专业的数学推导助手，需要使用LaTeX格式回答问题。
+**组件结构与功能：**
+1. **配置管理界面**：
+   - API Key输入（密码保护）
+   - API端点配置（支持预设和自定义）
+   - 模型选择（预设8种常用模型）
+   - 设置持久化到localStorage
 
-```typescript
-let systemPrompt = `你是一个专业的数学推导助手。你的任务是帮助用户理解和完成数学推导过程。
+2. **对话上下文构建**：
+   `buildContextMessage()`函数收集当前推导的上下文信息：
+   - 当前公式（如有）
+   - 最近5条推导历史
+   - 包含操作类型和LaTeX公式
 
-当前公式: ${currentFormula || '无'}
+3. **系统提示词设计**（`SYSTEM_PROMPT`）：
+   ```typescript
+   const SYSTEM_PROMPT = `你是一个数学推导助手。你正在帮助用户进行数学公式的推导和计算。
+   请用简洁清晰的语言回答用户的问题，使用 LaTeX 格式来表示数学公式。
+   - 行内公式使用 $...$ 包裹
+   - 独立公式块使用 $$...$$ 包裹
+   ```
 
-推导历史:
-${derivationHistory?.map((step: { operation: string; latex: string }, i: number) => 
-  `步骤${i + 1}: ${step.operation} -> ${step.latex}`
-).join('\n') || '无历史记录'}
+4. **API调用实现**（`sendMessage()`）：
+   - 使用非流式请求避免CORS问题
+   - 标准OpenAI兼容API格式
+   - 参数：temperature: 0.7, max_tokens: 2048, stream: false
+   - 完整的错误处理和友好提示
 
-请基于上下文提供精确的数学指导。使用LaTeX格式表示公式（用$...$包裹行内公式，$$...$$包裹独立公式）。`;
-```
+5. **LaTeX内容渲染**（`renderContent()`）：
+   - 正则分割：`/(\$\$[\s\S]*?\$\$|\$[^$\n]+\$)/`
+   - 按分隔符交替渲染：MathRenderer渲染公式，span渲染文字
+   - 支持行内公式（$）和块级公式（$$）
 
-AI响应内容的渲染需要特殊处理。由于AI可能返回包含LaTeX公式的混合文本，AIChat组件实现了内容解析逻辑，将响应文本按`$$...$$`和`$...$`分割，交替使用MathRenderer组件渲染公式和普通文本组件渲染文字。
+6. **快捷提示功能**：
+   - "下一步？"：询问下一步推导方法
+   - "验证"：验证推导正确性
+   - "解释"：解释公式含义
+   - "简化"：询问简化方法
+
+7. **用户体验优化**：
+   - 加载动画效果（Loader2图标）
+   - 清空对话功能
+   - 错误提示面板（可关闭）
+   - 显示当前模型和端点信息
+   - 响应式消息布局
+
+
+**关键技术点：**
+- 使用`useRef`管理消息容器，实现自动滚动
+- 错误信息包含CORS问题诊断和建议
+- 快捷填充问题功能，提升交互效率
+- 完整的TypeScript类型定义
 
 ### 4.4 操作面板组件实现
 
