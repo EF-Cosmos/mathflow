@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { 
-  ChevronDown, 
-  ChevronUp, 
+import {
+  ChevronDown,
+  ChevronUp,
   Maximize2,
   Minimize2,
   Layers,
   SquareEqual,
   Replace,
+  Sparkles,
 } from 'lucide-react';
 import MathRenderer from '../../MathRenderer';
 
 interface AlgebraOperationsProps {
   onApplyAlgebra: (operation: string, transform: (latex: string) => string) => void;
   disabled?: boolean;
+  aiAssistEnabled?: boolean;
+  onAiAssistChange?: (enabled: boolean) => void;
 }
 
 interface AlgebraOperation {
@@ -23,6 +26,7 @@ interface AlgebraOperation {
   color: string;
   preview: string;
   transform: (latex: string) => string;
+  isRealOperation?: boolean; // 是否为需要真实计算的操作（因式分解、展开、化简）
 }
 
 // 代数操作定义
@@ -35,6 +39,7 @@ const algebraOperations: AlgebraOperation[] = [
     color: 'text-emerald-500',
     preview: 'ab + ac = a(b+c)',
     transform: (l) => `\\text{factor}\\left(${l}\\right)`,
+    isRealOperation: true,
   },
   {
     id: 'expand',
@@ -44,6 +49,7 @@ const algebraOperations: AlgebraOperation[] = [
     color: 'text-blue-500',
     preview: '(a+b)^2 = a^2+2ab+b^2',
     transform: (l) => `\\text{expand}\\left(${l}\\right)`,
+    isRealOperation: true,
   },
   {
     id: 'simplify',
@@ -53,6 +59,7 @@ const algebraOperations: AlgebraOperation[] = [
     color: 'text-purple-500',
     preview: '\\frac{2x}{4} = \\frac{x}{2}',
     transform: (l) => `\\text{simplify}\\left(${l}\\right)`,
+    isRealOperation: true,
   },
   {
     id: 'substitute',
@@ -254,6 +261,8 @@ const operationGroups = [
 export default function AlgebraOperations({
   onApplyAlgebra,
   disabled = false,
+  aiAssistEnabled = false,
+  onAiAssistChange,
 }: AlgebraOperationsProps) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>('algebra');
   const [showPreview, setShowPreview] = useState<string | null>(null);
@@ -294,6 +303,33 @@ export default function AlgebraOperations({
 
   return (
     <div className="space-y-2">
+      {/* AI 辅助开关 */}
+      <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <div className="flex items-start gap-2">
+          <Sparkles size={16} className="text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+              AI 辅助因式分解
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              本地算法失败时使用 AI 处理复杂因式分解
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={aiAssistEnabled}
+                onChange={(e) => onAiAssistChange?.(e.target.checked)}
+                disabled={disabled}
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500 disabled:opacity-50"
+              />
+              <span className="text-xs text-gray-700 dark:text-gray-300">
+                {aiAssistEnabled ? '已开启' : '已关闭'}
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       {operationGroups.map((group) => {
         const Icon = group.icon;
         const isExpanded = expandedGroup === group.id;

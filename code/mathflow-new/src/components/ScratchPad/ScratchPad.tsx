@@ -3,14 +3,16 @@ import StepCard, { DerivationStep } from './StepCard';
 import { OperationToolbar } from './operations';
 import { TermAction } from './InteractiveFormula';
 import MathRenderer from '../MathRenderer';
-import { 
-  moveTermInEquation, 
-  combineLikeTermInEquation, 
-  splitEquation, 
+import {
+  moveTermInEquation,
+  combineLikeTermInEquation,
+  multiplyTermInEquation,
+  splitEquation,
   splitTerms,
   formatTerms,
-  ParsedTerm 
+  ParsedTerm
 } from '../../lib/equation';
+import { factorEquation, factorWithFallback, expandWithFallback, simplifyWithFallback } from '../../lib/factorization';
 import { 
   Plus, 
   Sparkles, 
@@ -28,6 +30,12 @@ interface ScratchPadProps {
   onSave?: () => void;
 }
 
+interface PendingMultiplyOperation {
+  side: 'lhs' | 'rhs';
+  termIndex: number;
+  term: ParsedTerm;
+}
+
 export default function ScratchPad({
   initialSteps = [],
   onStepsChange,
@@ -39,7 +47,11 @@ export default function ScratchPad({
   const [history, setHistory] = useState<DerivationStep[][]>([initialSteps]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [showSidebar, setShowSidebar] = useState(true);
-  
+  const [pendingMultiply, setPendingMultiply] = useState<PendingMultiplyOperation | null>(null);
+  const [multiplyValue, setMultiplyValue] = useState('');
+  const [aiAssistEnabled, setAiAssistEnabled] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -154,9 +166,9 @@ export default function ScratchPad({
 
   // 处理项操作
   const handleTermAction = useCallback((
-    action: TermAction, 
-    side: 'lhs' | 'rhs', 
-    termIndex: number, 
+    action: TermAction,
+    side: 'lhs' | 'rhs',
+    termIndex: number,
     term: ParsedTerm
   ) => {
     const baseLatex = getCurrentLatex();
@@ -176,13 +188,48 @@ export default function ScratchPad({
         operationName = 'Combine Like Terms';
         break;
       }
-      // 其他操作可以扩展
+      case 'multiply': {
+        // 乘法操作：设置待乘状态，等待用户输入乘数
+        setPendingMultiply({ side, termIndex, term });
+        setMultiplyValue('');
+        setActiveAction(null);
+        return; // 直接返回，不执行操作
+      }
     }
 
     if (result) {
       addStep(result.nextEquation, operationName);
     }
   }, [getCurrentLatex, addStep]);
+
+  // 执行乘法操作
+  const executeMultiply = useCallback(() => {
+    if (!pendingMultiply || !multiplyValue.trim()) return;
+
+    const baseLatex = getCurrentLatex();
+    if (!baseLatex) return;
+
+    const result = multiplyTermInEquation(
+      baseLatex,
+      pendingMultiply.side,
+      pendingMultiply.termIndex,
+      multiplyValue
+    );
+
+    if (result) {
+      addStep(result.nextEquation, 'Multiply Term');
+    }
+
+    // 重置状态
+    setPendingMultiply(null);
+    setMultiplyValue('');
+  }, [pendingMultiply, multiplyValue, getCurrentLatex, addStep]);
+
+  // 取消乘法操作
+  const cancelMultiply = useCallback(() => {
+    setPendingMultiply(null);
+    setMultiplyValue('');
+  }, []);
 
   // 两边同时操作
   const handleBothSidesOperation = useCallback((
@@ -227,12 +274,211 @@ export default function ScratchPad({
   }, [getCurrentLatex, addStep]);
 
   // 微积分操作
-  const handleCalculusOperation = useCallback((
+  const handleCalculusOperation = useCallback(async (
     operationName: string,
     transform: (latex: string) => string
   ) => {
     const baseLatex = getCurrentLatex();
     if (!baseLatex) return;
+
+    // 特殊处理因式分解
+    if (operationName === '因式分解') {
+      // 1. 尝试本地 + SymPy（快速回退）
+      const fallbackResult = await factorWithFallback(baseLatex);
+      if (fallbackResult) {
+        addStep(fallbackResult, operationName);
+        return;
+      }
+
+      // 2. 本地+SymPy 都失败，尝试 AI 辅助
+      if (aiAssistEnabled) {
+        const apiKey = localStorage.getItem('ai_api_key');
+        const baseUrl = localStorage.getItem('ai_base_url') || 'https://api.deepseek.com';
+        const model = localStorage.getItem('ai_model') || 'deepseek-chat';
+
+        if (!apiKey) {
+          addStep(baseLatex, '因式分解 (无法处理)');
+          return;
+        }
+
+        setAiLoading(true);
+        try {
+          const response = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{
+                role: 'system',
+                content: '你是一个数学因式分解助手。对用户给出的数学表达式进行因式分解，只返回因式分解后的 LaTeX 表达式，不要其他解释文字。使用标准的 LaTeX 格式。'
+              }, {
+                role: 'user',
+                content: baseLatex
+              }],
+              stream: false,
+              temperature: 0.2,
+              max_tokens: 500,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`AI 请求失败: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const aiResult = data.choices?.[0]?.message?.content?.trim() || '';
+
+          if (aiResult && aiResult !== baseLatex) {
+            addStep(aiResult, 'AI 因式分解');
+          } else {
+            addStep(baseLatex, '因式分解 (无法处理)');
+          }
+        } catch (error) {
+          console.error('AI factorization error:', error);
+          addStep(baseLatex, '因式分解 (AI 失败)');
+        } finally {
+          setAiLoading(false);
+        }
+      } else {
+        addStep(baseLatex, '因式分解 (无法处理)');
+      }
+      return;
+    }
+
+    // 特殊处理展开（优先使用 SymPy）
+    if (operationName === '展开') {
+      const expandResult = await expandWithFallback(baseLatex);
+      if (expandResult) {
+        addStep(expandResult, operationName);
+        return;
+      }
+
+      // SymPy 失败，尝试 AI 辅助
+      if (aiAssistEnabled) {
+        const apiKey = localStorage.getItem('ai_api_key');
+        const baseUrl = localStorage.getItem('ai_base_url') || 'https://api.deepseek.com';
+        const model = localStorage.getItem('ai_model') || 'deepseek-chat';
+
+        if (!apiKey) {
+          addStep(baseLatex, '展开 (无法处理)');
+          return;
+        }
+
+        setAiLoading(true);
+        try {
+          const response = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{
+                role: 'system',
+                content: '你是一个数学展开助手。对用户给出的数学表达式进行展开，只返回展开后的 LaTeX 表达式，不要其他解释文字。使用标准的 LaTeX 格式。'
+              }, {
+                role: 'user',
+                content: baseLatex
+              }],
+              stream: false,
+              temperature: 0.2,
+              max_tokens: 500,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`AI 请求失败: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const aiResult = data.choices?.[0]?.message?.content?.trim() || '';
+
+          if (aiResult && aiResult !== baseLatex) {
+            addStep(aiResult, 'AI 展开');
+          } else {
+            addStep(baseLatex, '展开 (无法处理)');
+          }
+        } catch (error) {
+          console.error('AI expand error:', error);
+          addStep(baseLatex, '展开 (AI 失败)');
+        } finally {
+          setAiLoading(false);
+        }
+      } else {
+        addStep(baseLatex, '展开 (无法处理)');
+      }
+      return;
+    }
+
+    // 特殊处理化简（优先使用 SymPy）
+    if (operationName === '化简') {
+      const simplifyResult = await simplifyWithFallback(baseLatex);
+      if (simplifyResult) {
+        addStep(simplifyResult, operationName);
+        return;
+      }
+
+      // SymPy 失败，尝试 AI 辅助
+      if (aiAssistEnabled) {
+        const apiKey = localStorage.getItem('ai_api_key');
+        const baseUrl = localStorage.getItem('ai_base_url') || 'https://api.deepseek.com';
+        const model = localStorage.getItem('ai_model') || 'deepseek-chat';
+
+        if (!apiKey) {
+          addStep(baseLatex, '化简 (无法处理)');
+          return;
+        }
+
+        setAiLoading(true);
+        try {
+          const response = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{
+                role: 'system',
+                content: '你是一个数学化简助手。对用户给出的数学表达式进行化简，只返回化简后的 LaTeX 表达式，不要其他解释文字。使用标准的 LaTeX 格式。'
+              }, {
+                role: 'user',
+                content: baseLatex
+              }],
+              stream: false,
+              temperature: 0.2,
+              max_tokens: 500,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`AI 请求失败: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const aiResult = data.choices?.[0]?.message?.content?.trim() || '';
+
+          if (aiResult && aiResult !== baseLatex) {
+            addStep(aiResult, 'AI 化简');
+          } else {
+            addStep(baseLatex, '化简 (无法处理)');
+          }
+        } catch (error) {
+          console.error('AI simplify error:', error);
+          addStep(baseLatex, '化简 (AI 失败)');
+        } finally {
+          setAiLoading(false);
+        }
+      } else {
+        addStep(baseLatex, '化简 (无法处理)');
+      }
+      return;
+    }
 
     // 判断是否为等式
     const eq = splitEquation(baseLatex);
@@ -247,7 +493,7 @@ export default function ScratchPad({
     }
 
     addStep(result, operationName);
-  }, [getCurrentLatex, addStep]);
+  }, [getCurrentLatex, addStep, aiAssistEnabled]);
 
   // 插入快捷符号
   const insertAtCursor = useCallback((text: string, cursorOffset: number = 0) => {
@@ -303,15 +549,27 @@ export default function ScratchPad({
       if (e.key === 'c' && !e.ctrlKey && !e.metaKey && document.activeElement !== inputRef.current) {
         setActiveAction(prev => prev === 'combine' ? null : 'combine');
       }
+      // * 乘法模式
+      if (e.key === '*' && !e.ctrlKey && !e.metaKey && document.activeElement !== inputRef.current) {
+        setActiveAction(prev => prev === 'multiply' ? null : 'multiply');
+      }
       // Escape 取消当前操作
       if (e.key === 'Escape') {
         setActiveAction(null);
+        if (pendingMultiply) {
+          cancelMultiply();
+        }
+      }
+      // Enter 执行乘法
+      if (e.key === 'Enter' && pendingMultiply && !e.shiftKey) {
+        e.preventDefault();
+        executeMultiply();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, pendingMultiply, cancelMultiply, executeMultiply]);
 
   return (
     <div className="flex h-full bg-gray-50 dark:bg-[#0a0a0a]">
@@ -382,7 +640,7 @@ export default function ScratchPad({
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
                   <Keyboard size={14} />
-                  <span>按 M 移项 | C 合并 | Esc 取消</span>
+                  <span>按 M 移项 | C 合并 | * 乘法 | Esc 取消</span>
                 </div>
               </div>
             ) : (
@@ -407,6 +665,54 @@ export default function ScratchPad({
         {/* 底部输入区 */}
         <div className="sticky bottom-0 bg-white dark:bg-[#171717] border-t border-gray-200 dark:border-gray-800 p-4">
           <div className="max-w-2xl mx-auto">
+            {/* 乘法输入提示 */}
+            {pendingMultiply && (
+              <div className="mb-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 animate-fade-in">
+                <div className="text-xs text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-1">
+                  <span className="font-medium">乘法操作</span>
+                  <span>·</span>
+                  <span>
+                    选中项: {pendingMultiply.term.sign === '-' ? '-' : ''}{pendingMultiply.term.latex}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={multiplyValue}
+                    onChange={(e) => setMultiplyValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        executeMultiply();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelMultiply();
+                      }
+                    }}
+                    placeholder="输入乘数 (如: 2, x, 3y)..."
+                    className="flex-1 px-3 py-2 text-sm border border-purple-300 dark:border-purple-700 rounded-lg bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    autoFocus
+                  />
+                  <button
+                    onClick={executeMultiply}
+                    disabled={!multiplyValue.trim()}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 dark:disabled:bg-purple-900 text-white text-sm rounded-lg transition-colors"
+                  >
+                    确定
+                  </button>
+                  <button
+                    onClick={cancelMultiply}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors"
+                  >
+                    取消
+                  </button>
+                </div>
+                <div className="mt-2 text-xs text-purple-600 dark:text-purple-400">
+                  Enter 确认 · Esc 取消
+                </div>
+              </div>
+            )}
+
             {/* 实时预览 */}
             {currentInput && (
               <div className="mb-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -464,6 +770,8 @@ export default function ScratchPad({
             onApplyBothSides={handleBothSidesOperation}
             onApplyCalculus={handleCalculusOperation}
             disabled={steps.length === 0 && !currentInput.trim()}
+            aiAssistEnabled={aiAssistEnabled}
+            onAiAssistChange={setAiAssistEnabled}
           />
         </div>
       )}

@@ -295,3 +295,100 @@ export const moveTermInEquation = (
 };
 
 export const toSignedLatex = termToSignedLatex;
+
+/**
+ * 对等式中某一边的某个项进行乘法运算
+ * 将选中项的系数乘以指定值
+ *
+ * @param equationLatex 等式 LaTeX 字符串
+ * @param side 操作哪一边 ('lhs' | 'rhs')
+ * @param termIndex 项的索引
+ * @param multiplier 乘数（数字或表达式）
+ * @returns 新的等式和操作信息
+ */
+export const multiplyTermInEquation = (
+  equationLatex: string,
+  side: EquationSide,
+  termIndex: number,
+  multiplier: string
+): { nextEquation: string; multiplied: { side: EquationSide; originalTerm: ParsedTerm; multiplier: string; newTerm: ParsedTerm } } | null => {
+  const eq = splitEquation(equationLatex);
+  if (!eq.hasEquals) return null;
+
+  const lhsTerms = splitTerms(eq.lhs);
+  const rhsTerms = splitTerms(eq.rhs);
+  const terms = side === 'lhs' ? lhsTerms : rhsTerms;
+
+  if (termIndex < 0 || termIndex >= terms.length) return null;
+
+  const originalTerm = terms[termIndex];
+
+  // 解析乘数
+  const multiplierNum = parseFloat(multiplier);
+  const isNumericMultiplier = !isNaN(multiplierNum);
+
+  // 构建新的项
+  let newLatex: string;
+  if (isNumericMultiplier) {
+    // 数字乘法：修改系数
+    const parsed = parseTermCoefficient(originalTerm.latex);
+    const newCoefficient = parsed.coefficient * multiplierNum;
+    const signMultiplier = originalTerm.sign === '+' ? 1 : -1;
+    const finalCoefficient = signMultiplier * newCoefficient;
+
+    if (finalCoefficient === 0) {
+      // 乘积为0，移除该项
+      terms.splice(termIndex, 1);
+      const nextLhs = formatTerms(lhsTerms);
+      const nextRhs = formatTerms(rhsTerms);
+      const nextEquation = `${nextLhs || '0'} = ${nextRhs || '0'}`;
+
+      return {
+        nextEquation,
+        multiplied: {
+          side,
+          originalTerm,
+          multiplier,
+          newTerm: { sign: '+', latex: '0' }
+        }
+      };
+    }
+
+    // 构建新项
+    const newSign: '+' | '-' = finalCoefficient < 0 ? '-' : '+';
+    const absCoeff = Math.abs(finalCoefficient);
+
+    if (parsed.variable === '' || parsed.variable === '__constant__') {
+      // 常数项
+      newLatex = String(absCoeff);
+    } else if (absCoeff === 1) {
+      // 系数为1，省略系数
+      newLatex = parsed.variable;
+    } else {
+      // 正常情况
+      newLatex = `${absCoeff}${parsed.variable}`;
+    }
+
+    terms[termIndex] = { sign: newSign, latex: newLatex };
+  } else {
+    // 表达式乘法：使用 \cdot
+    const originalSignedLatex = termToSignedLatex(originalTerm);
+    // 简化处理：直接使用 \cdot 连接
+    newLatex = `\\left(${originalSignedLatex}\\right) \\cdot ${multiplier}`;
+    terms[termIndex] = { sign: originalTerm.sign, latex: newLatex };
+  }
+
+  const nextLhs = formatTerms(lhsTerms);
+  const nextRhs = formatTerms(rhsTerms);
+  const nextEquation = `${nextLhs || '0'} = ${nextRhs || '0'}`;
+
+  return {
+    nextEquation,
+    multiplied: {
+      side,
+      originalTerm,
+      multiplier,
+      newTerm: terms[termIndex]
+    }
+  };
+};

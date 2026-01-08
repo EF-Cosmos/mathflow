@@ -23,6 +23,8 @@ interface OperationToolbarProps {
   onApplyCalculus: (operation: string, transform: (latex: string) => string) => void;
   disabled?: boolean;
   className?: string;
+  aiAssistEnabled?: boolean;
+  onAiAssistChange?: (enabled: boolean) => void;
 }
 
 type TabType = 'algebra' | 'functions' | 'calculus' | 'symbols';
@@ -42,6 +44,8 @@ export default function OperationToolbar({
   onApplyCalculus,
   disabled = false,
   className = '',
+  aiAssistEnabled = false,
+  onAiAssistChange,
 }: OperationToolbarProps) {
   const [activeTab, setActiveTab] = useState<TabType>('algebra');
   const [collapsed, setCollapsed] = useState(false);
@@ -128,6 +132,8 @@ export default function OperationToolbar({
           <AlgebraOperations
             onApplyAlgebra={onApplyCalculus}
             disabled={disabled}
+            aiAssistEnabled={aiAssistEnabled}
+            onAiAssistChange={onAiAssistChange}
           />
         )}
 

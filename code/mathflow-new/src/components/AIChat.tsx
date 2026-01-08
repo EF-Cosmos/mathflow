@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { useToast } from '../hooks/use-toast';
 import MathRenderer from './MathRenderer';
-import { Send, Key, Settings, Loader2, Bot, User, Globe, Sparkles, Trash2, AlertCircle } from 'lucide-react';
+import { Send, Key, Settings, Loader2, Bot, User, Globe, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface AIChatProps {
   currentFormula: string;
@@ -28,6 +31,8 @@ const SYSTEM_PROMPT = `你是一个数学推导助手。你正在帮助用户进
 当前用户正在处理的公式信息会在对话中提供给你。`;
 
 export default function AIChat({ currentFormula, derivationHistory }: AIChatProps) {
+  const { error: showError } = useToast();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,8 +90,8 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
 
     try {
       const contextInfo = buildContextMessage();
-      const systemMessage: Message = { 
-        role: 'system', 
+      const systemMessage: Message = {
+        role: 'system',
         content: SYSTEM_PROMPT + (contextInfo ? `\n\n当前上下文:\n${contextInfo}` : '')
       };
 
@@ -119,18 +124,18 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
 
       const data = await response.json();
       const assistantContent = data.choices?.[0]?.message?.content || '无响应内容';
-      
+
       setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
 
     } catch (err: any) {
       console.error('AI chat error:', err);
-      
+
       // 更友好的错误提示
       let errorMsg = err.message || '请求失败';
       if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
         errorMsg = '网络请求失败。可能的原因：\n1. API 端点不支持浏览器直接访问（CORS限制）\n2. 网络连接问题\n3. API 地址不正确\n\n建议：使用支持 CORS 的 API 服务，如 DeepSeek、SiliconFlow 等';
       }
-      
+
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -185,16 +190,17 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <Bot size={18} className="text-purple-500" />
-          <span className="font-medium text-gray-900 dark:text-white">AI 助手</span>
+          <Bot size={18} className="text-accent" />
+          <span className="font-medium text-foreground">AI 助手</span>
         </div>
         <div className="flex items-center gap-1">
           {messages.length > 0 && (
             <button
               onClick={clearChat}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-500 hover:text-red-500"
+              className="p-1.5 hover:bg-background-tertiary rounded text-foreground-secondary hover:text-error"
               title="清空对话"
             >
               <Trash2 size={16} />
@@ -202,7 +208,7 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
           )}
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded ${!config.apiKey ? 'text-orange-500' : 'text-gray-500'}`}
+            className={`p-1.5 hover:bg-background-tertiary rounded ${!config.apiKey ? 'text-warning' : 'text-foreground-secondary'}`}
             title="设置"
           >
             <Settings size={16} />
@@ -210,33 +216,34 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
         </div>
       </div>
 
+      {/* Settings Panel */}
       {showSettings && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#0A0A0A]">
+        <div className="p-4 border-b border-border bg-background-secondary">
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+              <label className="block text-xs font-medium text-foreground-secondary mb-1">API Key</label>
               <div className="relative">
-                <Key className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                <input
+                <Key className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-muted" size={14} />
+                <Input
                   type="password"
                   value={config.apiKey}
                   onChange={(e) => setConfig(c => ({ ...c, apiKey: e.target.value }))}
                   placeholder="输入你的 API Key"
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+                  className="pl-8 text-sm"
                 />
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">API 端点</label>
+              <label className="block text-xs font-medium text-foreground-secondary mb-1">API 端点</label>
               <div className="relative">
-                <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                <input
+                <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-muted" size={14} />
+                <Input
                   type="text"
                   value={config.baseUrl}
                   onChange={(e) => setConfig(c => ({ ...c, baseUrl: e.target.value }))}
                   placeholder="https://api.openai.com/v1"
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+                  className="pl-8 text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-1 mt-1.5">
@@ -245,9 +252,9 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
                     key={ep.value}
                     onClick={() => setConfig(c => ({ ...c, baseUrl: ep.value }))}
                     className={`px-2 py-0.5 text-xs rounded ${
-                      config.baseUrl === ep.value 
-                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      config.baseUrl === ep.value
+                        ? 'bg-accent-bg text-accent'
+                        : 'bg-background-tertiary text-foreground-secondary hover:bg-border'
                     }`}
                   >
                     {ep.label}
@@ -257,15 +264,15 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">模型</label>
+              <label className="block text-xs font-medium text-foreground-secondary mb-1">模型</label>
               <div className="relative">
-                <Sparkles className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                <input
+                <Sparkles className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-muted" size={14} />
+                <Input
                   type="text"
                   value={config.model}
                   onChange={(e) => setConfig(c => ({ ...c, model: e.target.value }))}
                   placeholder="gpt-4o-mini"
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+                  className="pl-8 text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-1 mt-1.5">
@@ -274,9 +281,9 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
                     key={m.value}
                     onClick={() => setConfig(c => ({ ...c, model: m.value }))}
                     className={`px-2 py-0.5 text-xs rounded ${
-                      config.model === m.value 
-                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      config.model === m.value
+                        ? 'bg-accent-bg text-accent'
+                        : 'bg-background-tertiary text-foreground-secondary hover:bg-border'
                     }`}
                   >
                     {m.label}
@@ -285,48 +292,53 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
               </div>
             </div>
 
-            <button
+            <Button
               onClick={saveSettings}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded"
+              variant="primary"
+              className="w-full"
+              size="sm"
             >
               保存设置
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
+      {/* API Key Notice */}
       {!config.apiKey && !showSettings && (
         <div className="p-4 text-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <div className="text-sm text-foreground-secondary mb-2">
             配置 API Key 以使用 AI 助手
           </div>
-          <button
+          <Button
             onClick={() => setShowSettings(true)}
-            className="text-sm text-purple-600 hover:text-purple-700"
+            variant="link"
+            size="sm"
           >
             打开设置
-          </button>
+          </Button>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
         {messages.length === 0 && config.apiKey && (
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-center text-sm text-foreground-secondary">
             <p className="mb-3">有问题就问我吧！</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {quickPrompts.map((item) => (
                 <button
                   key={item.label}
                   onClick={() => setInput(item.prompt)}
-                  className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+                  className="px-3 py-1.5 text-xs bg-background-tertiary hover:bg-border rounded-full transition-colors"
                 >
                   {item.label}
                 </button>
               ))}
             </div>
             {currentFormula && (
-              <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <div className="text-xs text-gray-400 mb-1">当前公式</div>
+              <div className="mt-4 p-3 bg-background-tertiary rounded-lg">
+                <div className="text-xs text-foreground-muted mb-1">当前公式</div>
                 <MathRenderer latex={currentFormula} />
               </div>
             )}
@@ -336,22 +348,22 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
-              <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                <Bot size={14} className="text-purple-600" />
+              <div className="w-7 h-7 rounded-full bg-accent-bg flex items-center justify-center flex-shrink-0">
+                <Bot size={14} className="text-accent" />
               </div>
             )}
             <div
               className={`max-w-[80%] p-3 rounded-lg text-sm ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+                  ? 'bg-secondary text-secondary-foreground'
+                  : 'bg-background-tertiary text-foreground'
               }`}
             >
               {msg.role === 'assistant' ? renderContent(msg.content) : msg.content}
             </div>
             {msg.role === 'user' && (
-              <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                <User size={14} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-full bg-secondary-bg flex items-center justify-center flex-shrink-0">
+                <User size={14} className="text-secondary" />
               </div>
             )}
           </div>
@@ -359,30 +371,30 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
 
         {loading && (
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Loader2 size={14} className="text-purple-600 animate-spin" />
+            <div className="w-7 h-7 rounded-full bg-accent-bg flex items-center justify-center">
+              <Loader2 size={14} className="text-accent animate-spin" />
             </div>
-            <div className="flex-1 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200">
+            <div className="flex-1 p-3 rounded-lg bg-background-tertiary text-sm text-foreground">
               <div className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2 h-2 bg-foreground-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-foreground-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-foreground-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div className="p-3 rounded-lg bg-error-bg border border-error">
             <div className="flex items-start gap-2">
-              <AlertCircle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap">
+              <AlertCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-error-foreground whitespace-pre-wrap flex-1">
                 {error}
               </div>
             </div>
             <button
               onClick={() => setError(null)}
-              className="mt-2 text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+              className="mt-2 text-xs text-error hover:underline"
             >
               关闭
             </button>
@@ -392,27 +404,29 @@ export default function AIChat({ currentFormula, derivationHistory }: AIChatProp
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input */}
       {config.apiKey && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="p-4 border-t border-border">
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               placeholder="输入你的问题..."
-              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white"
+              className="flex-1"
               disabled={loading}
             />
-            <button
+            <Button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
-              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg"
+              variant="primary"
+              size="icon"
             >
-              <Send size={18} />
-            </button>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </Button>
           </div>
-          <div className="mt-2 text-xs text-gray-400 text-center">
+          <div className="mt-2 text-xs text-foreground-muted text-center">
             {config.model} @ {(() => {
               try {
                 return new URL(config.baseUrl).host;

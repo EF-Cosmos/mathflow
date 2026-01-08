@@ -1,35 +1,54 @@
 import React from 'react';
+import { ErrorBoundaryFallback } from './feedback/ErrorDisplay';
 
-const searilizeError = (error: any) => {
+const serializeError = (error: any) => {
   if (error instanceof Error) {
-    return error.message + '\n' + error.stack;
+    return error;
   }
-  return JSON.stringify(error, null, 2);
+  return new Error(JSON.stringify(error, null, 2));
 };
 
-export class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: any }
-> {
-  constructor(props: { children: React.ReactNode }) {
+interface Props {
+  children: React.ReactNode;
+  fallback?: React.ComponentType<{ error: Error; resetError: () => void }>;
+}
+
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: any): State {
+    return { hasError: true, error: serializeError(error) };
   }
 
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log error to error reporting service (optional)
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // You can integrate with error tracking services here:
+    // Sentry.captureException(error, { contexts: { react: errorInfo } });
+  }
+
+  resetError = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-4 border border-red-500 rounded">
-          <h2 className="text-red-500">Something went wrong.</h2>
-          <pre className="mt-2 text-sm">{searilizeError(this.state.error)}</pre>
-        </div>
-      );
+    const { hasError, error } = this.state;
+    const { children, fallback: Fallback } = this.props;
+
+    if (hasError && error) {
+      const FallbackComponent = Fallback || ErrorBoundaryFallback;
+      return <FallbackComponent error={error} resetError={this.resetError} />;
     }
 
-    return this.props.children;
+    return children;
   }
 }
