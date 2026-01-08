@@ -1,15 +1,95 @@
----
-AIGC:
-    ContentProducer: Minimax Agent AI
-    ContentPropagator: Minimax Agent AI
-    Label: AIGC
-    ProduceID: "00000000000000000000000000000000"
-    PropagateID: "00000000000000000000000000000000"
-    ReservedCode1: 304402205874a96eb84c489ba6cc93670e56f19f6e89bf641789ddd79bf44d99de59e4520220236a8412b5d7c43874fe02d9abcb5ddb2be5c3ac81b4129ba61dad2b500f1738
-    ReservedCode2: 3045022074db0193cbccaad3e6023dfa309c0ebc4d9540a483c2f1f92af204fe8859e20d022100da915228701c30977ea671b314de392d5a184e887c1405e65cee059f60e210a1
----
+# MathFlow
 
-# React + TypeScript + Vite
+A mathematical expression manipulation and learning platform built with React + TypeScript + Vite, featuring symbolic computation powered by SymPy.
+
+## Features
+
+- **Mathematical ScratchPad**: Interactive workspace for mathematical operations
+- **Symbolic Computation**: Factorization, expansion, and simplification of mathematical expressions
+- **Equation Support**: Handle both simple expressions and equations (e.g., `3x^2 + 3x = y`)
+- **AI-Powered Fallback**: Intelligent fallback when symbolic computation fails
+- **Real-time LaTeX Rendering**: Beautiful mathematical notation display
+
+## Documentation Maintenance
+
+> **Note**: When updating this README and other documentation, always verify functional implementations and technical details by referencing the source code. Key implementation files include:
+> - `src/lib/factorization.ts` - Factorization logic with SymPy integration
+> - `src/lib/equation.ts` - Equation parsing utilities
+> - `src/components/ScratchPad/ScratchPad.tsx` - Main scratchpad component
+> - `src/components/ScratchPad/operations/AlgebraOperations.tsx` - Operation buttons
+> - `backend/` - FastAPI + SymPy backend service
+
+## Tech Stack
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **Backend**: FastAPI + Python 3.11 + SymPy
+- **Container**: Podman (Docker-compatible)
+- **Math Rendering**: LaTeX + KaTeX
+- **Styling**: Tailwind CSS + shadcn/ui
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js 18+
+- Python 3.11+
+- Podman or Docker
+- pnpm
+
+### Backend (SymPy API)
+
+The backend runs on port 8001 to avoid conflicts with Supabase/Kong (port 8000).
+
+Using Podman Compose:
+
+```bash
+cd /path/to/mathflow-new
+podman-compose up -d backend
+```
+
+Manual Podman:
+
+```bash
+cd backend
+podman build -t mathflow-sympy:latest .
+podman run -d --name mathflow-backend --network host --restart unless-stopped localhost/mathflow-sympy:latest
+```
+
+### Frontend
+
+```bash
+cd /path/to/mathflow-new
+pnpm install
+pnpm dev
+```
+
+The frontend will be available at `http://localhost:3000`
+
+## Environment Variables
+
+See `.env.example` for required environment variables:
+
+- `VITE_SUPABASE_URL` - Supabase instance URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `VITE_SYMPY_API_URL` - SymPy backend URL (default: `http://localhost:8001`)
+
+## Key Operations
+
+### Factorization
+- Supports both expressions and equations
+- Example: `3x^2 + 3x` → `3x(x + 1)`
+- Example: `(3x)(x+1) = y` factors each side independently
+
+### Expansion
+- Distributes products and powers
+- Example: `(3x)(x+1) = y` → `3x^2 + 3x = y`
+- Priority: SymPy backend → AI fallback
+
+### Simplification
+- Reduces expressions to simplest form
+- Handles complex algebraic manipulations
+
+---
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
