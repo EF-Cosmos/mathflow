@@ -21,6 +21,7 @@ interface OperationToolbarProps {
   onQuickInsert: (latex: string, cursorOffset?: number) => void;
   onApplyBothSides: (operation: 'add' | 'subtract' | 'multiply' | 'divide', value: string) => void;
   onApplyCalculus: (operation: string, transform: (latex: string) => string) => void;
+  onCalculateCalculus?: (operation: string) => void;
   disabled?: boolean;
   className?: string;
   aiAssistEnabled?: boolean;
@@ -42,6 +43,7 @@ export default function OperationToolbar({
   onQuickInsert,
   onApplyBothSides,
   onApplyCalculus,
+  onCalculateCalculus,
   disabled = false,
   className = '',
   aiAssistEnabled = false,
@@ -140,6 +142,7 @@ export default function OperationToolbar({
         {activeTab === 'calculus' && (
           <CalculusOperations
             onApplyCalculus={onApplyCalculus}
+            onCalculateCalculus={onCalculateCalculus || (() => {})}
             disabled={disabled}
           />
         )}

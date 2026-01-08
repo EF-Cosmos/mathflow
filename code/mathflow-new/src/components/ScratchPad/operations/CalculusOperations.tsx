@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -11,6 +12,7 @@ import MathRenderer from '../../MathRenderer';
 
 interface CalculusOperationsProps {
   onApplyCalculus: (operation: string, transform: (latex: string) => string) => void;
+  onCalculateCalculus: (operation: string) => void;
   disabled?: boolean;
 }
 
@@ -201,21 +203,57 @@ const colorBg: Record<string, string> = {
 
 export default function CalculusOperations({
   onApplyCalculus,
+  onCalculateCalculus,
   disabled = false,
 }: CalculusOperationsProps) {
   const [expandedSection, setExpandedSection] = useState<'basic' | 'advanced' | null>('basic');
   const [showPreview, setShowPreview] = useState<string | null>(null);
+  const [popoverPositions, setPopoverPositions] = useState<Record<string, 'left' | 'right'>>({});
+  const [buttonPositions, setButtonPositions] = useState<Record<string, { top: number; left: number; right: number }>>({});
+
+  const handleOperationClick = (e: React.MouseEvent, op: CalculusOperation) => {
+    if (e.shiftKey) {
+      // Shift+点击：调用后端计算
+      onCalculateCalculus(op.name);
+    } else {
+      // 普通点击：格式转换
+      onApplyCalculus(op.name, op.transform);
+    }
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent, op: CalculusOperation) => {
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+
+    // 存储按钮位置信息供 Portal 使用
+    setButtonPositions(prev => ({
+      ...prev,
+      [op.id]: { top: rect.top, left: rect.left, right: rect.right }
+    }));
+
+    // 检测右侧是否有足够空间（假设提示框宽度约 200px）
+    const spaceOnRight = windowWidth - rect.right;
+    const shouldShowOnLeft = spaceOnRight < 200;
+
+    setPopoverPositions(prev => ({ ...prev, [op.id]: shouldShowOnLeft ? 'left' : 'right' }));
+    setShowPreview(op.id);
+  };
 
   const renderOperationButton = (op: CalculusOperation) => {
     const Icon = op.icon;
     const bgClass = colorBg[op.color] || 'hover:bg-gray-50 dark:hover:bg-gray-800';
-    
+    const popoverPosition = popoverPositions[op.id] || 'right';
+    const buttonPos = buttonPositions[op.id];
+
     return (
       <button
         key={op.id}
-        onClick={() => onApplyCalculus(op.name, op.transform)}
-        onMouseEnter={() => setShowPreview(op.id)}
-        onMouseLeave={() => setShowPreview(null)}
+        onClick={(e) => handleOperationClick(e, op)}
+        onMouseEnter={(e) => handleMouseEnter(e, op)}
+        onMouseLeave={() => {
+          setShowPreview(null);
+        }}
         disabled={disabled}
         className={`
           relative flex items-center gap-2 px-3 py-2 rounded-lg
@@ -224,20 +262,13 @@ export default function CalculusOperations({
           ${bgClass}
           disabled:opacity-50 disabled:cursor-not-allowed
         `}
+        title={`点击: 格式转换 | Shift+点击: 计算结果`}
       >
         <Icon size={16} className={op.color} />
         <div className="flex-1 text-left">
           <div className="font-medium text-gray-700 dark:text-gray-300">{op.name}</div>
           <div className="text-xs text-gray-500 dark:text-gray-500">{op.description}</div>
         </div>
-        
-        {/* 预览弹出框 */}
-        {showPreview === op.id && (
-          <div className="absolute left-full ml-2 top-0 z-50 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg whitespace-nowrap">
-            <div className="text-xs text-gray-500 mb-1">预览:</div>
-            <MathRenderer latex={op.preview} displayMode={false} />
-          </div>
-        )}
       </button>
     );
   };
@@ -283,6 +314,38 @@ export default function CalculusOperations({
           </div>
         )}
       </div>
+
+      {/* Portal-rendered tooltip for preview */}
+      {showPreview && buttonPositions[showPreview] && createPortal(
+        <div
+          className="z-[9999] pointer-events-none"
+          style={{
+            position: 'fixed',
+            top: buttonPositions[showPreview].top,
+            left: popoverPositions[showPreview] === 'left'
+              ? buttonPositions[showPreview].left - 8
+              : buttonPositions[showPreview].right + 8,
+            transform: popoverPositions[showPreview] === 'left'
+              ? 'translateX(-100%) translateY(0)'
+              : 'translateX(0) translateY(0)',
+          }}
+          onMouseLeave={() => {
+            setShowPreview(null);
+          }}
+        >
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 min-w-[180px] max-w-[240px]">
+            <div className="text-xs text-gray-500 dark:text-gray-500 mb-1">预览:</div>
+            <div className="text-base dark:text-gray-200 flex justify-center">
+              <MathRenderer latex={[...calculusOperations, ...advancedCalculusOperations].find(op => op.id === showPreview)?.preview || ''} />
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500">
+              <div>• 点击: 格式转换</div>
+              <div>• Shift+点击: 计算</div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

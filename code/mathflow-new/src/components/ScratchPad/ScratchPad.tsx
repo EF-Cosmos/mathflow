@@ -13,6 +13,7 @@ import {
   ParsedTerm
 } from '../../lib/equation';
 import { factorEquation, factorWithFallback, expandWithFallback, simplifyWithFallback } from '../../lib/factorization';
+import { applyCalculusOperation } from '../../lib/calculus';
 import { 
   Plus, 
   Sparkles, 
@@ -495,6 +496,140 @@ export default function ScratchPad({
     addStep(result, operationName);
   }, [getCurrentLatex, addStep, aiAssistEnabled]);
 
+  // Shift+点击：调用后端计算微积分结果
+  const handleCalculateCalculus = useCallback(async (operationName: string) => {
+    const baseLatex = getCurrentLatex();
+    if (!baseLatex) return;
+
+    // 线积分暂不实现
+    if (operationName === '线积分') {
+      addStep(baseLatex, '线积分 (暂未实现)');
+      return;
+    }
+
+    // 对于需要参数的操作，使用默认值
+    const params: Record<string, any> = {
+      variable: 'x',
+    };
+
+    // 定积分需要上下限
+    if (operationName === '定积分') {
+      params.lower_limit = '0';
+      params.upper_limit = '1';
+    }
+
+    // 极限需要趋近值
+    if (operationName === '极限') {
+      params.point = '0';
+    }
+
+    // 求和需要起始和结束值
+    if (operationName === '求和') {
+      params.variable = 'i';
+      params.start = '1';
+      params.end = '10';
+    }
+
+    // 求积需要起始和结束值
+    if (operationName === '求积') {
+      params.variable = 'i';
+      params.start = '1';
+      params.end = '5';
+    }
+
+    // Taylor 展开
+    if (operationName === 'Taylor展开') {
+      params.point = '0';
+      params.order = 5;
+    }
+
+    // 向量微积分需要指定变量
+    if (['梯度', '拉普拉斯'].includes(operationName)) {
+      params.variables = ['x', 'y', 'z'];
+    }
+
+    // 散度和旋度需要向量场分量（暂时使用默认）
+    if (operationName === '散度' || operationName === '旋度') {
+      params.components = ['x', 'y', 'z'];
+      params.variables = ['x', 'y', 'z'];
+    }
+
+    // 二重积分
+    if (operationName === '二重积分') {
+      params.variables = ['x', 'y'];
+      params.limits = [['0', '1'], ['0', '1']];
+    }
+
+    // 三重积分
+    if (operationName === '三重积分') {
+      params.variables = ['x', 'y', 'z'];
+      params.limits = [['0', '1'], ['0', '1'], ['0', '1']];
+    }
+
+    // 调用后端 API
+    const result = await applyCalculusOperation(operationName, baseLatex, params);
+
+    if (result) {
+      addStep(result, operationName);
+    } else {
+      // API 失败，尝试 AI 辅助
+      if (aiAssistEnabled) {
+        const apiKey = localStorage.getItem('ai_api_key');
+        const baseUrl = localStorage.getItem('ai_base_url') || 'https://api.deepseek.com';
+        const model = localStorage.getItem('ai_model') || 'deepseek-chat';
+
+        if (!apiKey) {
+          addStep(baseLatex, `${operationName} (无法处理)`);
+          return;
+        }
+
+        setAiLoading(true);
+        try {
+          const response = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{
+                role: 'system',
+                content: `你是一个数学微积分助手。对用户给出的数学表达式进行${operationName}，只返回计算后的 LaTeX 表达式，不要其他解释文字。使用标准的 LaTeX 格式。`
+              }, {
+                role: 'user',
+                content: baseLatex
+              }],
+              stream: false,
+              temperature: 0.2,
+              max_tokens: 500,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`AI 请求失败: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const aiResult = data.choices?.[0]?.message?.content?.trim() || '';
+
+          if (aiResult && aiResult !== baseLatex) {
+            addStep(aiResult, `AI ${operationName}`);
+          } else {
+            addStep(baseLatex, `${operationName} (无法处理)`);
+          }
+        } catch (error) {
+          console.error(`AI ${operationName} error:`, error);
+          addStep(baseLatex, `${operationName} (AI 失败)`);
+        } finally {
+          setAiLoading(false);
+        }
+      } else {
+        addStep(baseLatex, `${operationName} (无法处理)`);
+      }
+    }
+  }, [getCurrentLatex, addStep, aiAssistEnabled]);
+
   // 插入快捷符号
   const insertAtCursor = useCallback((text: string, cursorOffset: number = 0) => {
     const el = inputRef.current;
@@ -769,6 +904,7 @@ export default function ScratchPad({
             onQuickInsert={insertAtCursor}
             onApplyBothSides={handleBothSidesOperation}
             onApplyCalculus={handleCalculusOperation}
+            onCalculateCalculus={handleCalculateCalculus}
             disabled={steps.length === 0 && !currentInput.trim()}
             aiAssistEnabled={aiAssistEnabled}
             onAiAssistChange={setAiAssistEnabled}

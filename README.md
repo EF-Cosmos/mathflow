@@ -23,6 +23,15 @@ MathFlow 是一个基于 Web 的交互式数学学习平台，支持符号计算
   - 展开 (Expand) - 多项式展开
   - 化简 (Simplify) - 表达式化简
 
+- **微积分运算**
+  - 基础微积分 - 求导、偏导、不定积分、定积分、极限
+  - 高级微积分 - Taylor 级数展开、梯度、散度、旋度、拉普拉斯算子
+  - 多重积分 - 二重积分、三重积分
+  - **双模式操作**：
+    - 点击：格式转换（如 `x^2` → `∫ x^2 dx`）
+    - Shift+点击：调用后端计算（如 `x^2` → `x^3/3`）
+  - 详细实现请参考 [`backend/app/services/sympy_service.py`](code/mathflow-new/backend/app/services/sympy_service.py) 和 [`backend/app/services/vector_calculus.py`](code/mathflow-new/backend/app/services/vector_calculus.py)
+
 - **方程操作**
   - 移项 (Move Term) - 点击项即可移到等号另一侧
   - 合并同类项 (Combine Like Terms)
@@ -78,7 +87,8 @@ mathflow/
 │   │   │   └── feedback/      # 反馈组件
 │   │   ├── lib/               # 核心库
 │   │   │   ├── factorization.ts   # 数学运算逻辑
-│   │   │   └── equation.ts        # 方程处理工具
+│   │   │   ├── equation.ts        # 方程处理工具
+│   │   │   └── calculus.ts        # 微积分 API 调用
 │   │   ├── pages/             # 页面组件
 │   │   ├── providers/         # Context 提供者
 │   │   └── theme/             # 主题配置
@@ -87,7 +97,8 @@ mathflow/
 │   │   │   ├── main.py        # FastAPI 应用入口
 │   │   │   ├── models.py      # Pydantic 模型
 │   │   │   └── services/
-│   │   │       └── sympy_service.py  # SymPy 服务
+│   │   │       ├── sympy_service.py     # SymPy 基础服务
+│   │   │       └── vector_calculus.py  # 向量微积分模块
 │   │   ├── Dockerfile
 │   │   └── requirements.txt
 │   ├── package.json
@@ -213,25 +224,58 @@ make clean
 
 ### SymPy 后端 (端口 8001)
 
+#### 代数运算
+
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | `/api/factor` | POST | 因式分解表达式 |
 | `/api/expand` | POST | 展开表达式 |
 | `/api/simplify` | POST | 化简表达式 |
 
-**请求格式:**
+#### 基础微积分
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/calculus/differentiate` | POST | 求导 |
+| `/api/calculus/partial` | POST | 偏导数 |
+| `/api/calculus/integrate` | POST | 不定积分 |
+| `/api/calculus/definite-integral` | POST | 定积分 |
+| `/api/calculus/limit` | POST | 极限 |
+| `/api/calculus/limit-infinity` | POST | 无穷极限 |
+| `/api/calculus/sum` | POST | 求和 |
+| `/api/calculus/product` | POST | 求积 |
+| `/api/calculus/taylor` | POST | Taylor 级数展开 |
+
+#### 向量微积分
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/vector/gradient` | POST | 梯度计算 |
+| `/api/vector/divergence` | POST | 散度计算 |
+| `/api/vector/curl` | POST | 旋度计算 |
+| `/api/vector/laplacian` | POST | 拉普拉斯算子 |
+
+#### 多重积分
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/integral/double` | POST | 二重积分 |
+| `/api/integral/triple` | POST | 三重积分 |
+
+**请求格式（基础）：**
 
 ```json
 {
-  "latex": "x^2 + 2x + 1"
+  "latex": "x^2",
+  "variable": "x"
 }
 ```
 
-**响应格式:**
+**响应格式：**
 
 ```json
 {
-  "result": "\\left(x + 1\\right)^{2}"
+  "result": "\\frac{x^{3}}{3}"
 }
 ```
 
@@ -283,6 +327,13 @@ VITE_SYMPY_API_URL=http://localhost:8001
 | `Esc` | 取消当前操作 |
 | `Shift+Enter` | 添加当前输入 |
 
+### 微积分快捷操作
+
+| 操作 | 功能 |
+|------|------|
+| 点击微积分按钮 | 格式转换（如 `x^2` → `∫ x^2 dx`） |
+| `Shift+点击` 微积分按钮 | 调用后端计算（如 `x^2` → `x^3/3`） |
+
 ## 常见问题
 
 ### 端口冲突
@@ -306,6 +357,26 @@ pnpm build
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
+
+### 文档维护
+
+本项目文档应与源代码保持同步。当涉及功能实现和技术细节时，请从源代码中查证：
+
+- **后端实现**: [`code/mathflow-new/backend/app/`](code/mathflow-new/backend/app/)
+  - `main.py` - API 端点定义
+  - `models.py` - 数据模型
+  - `services/sympy_service.py` - SymPy 数学运算
+  - `services/vector_calculus.py` - 向量微积分
+
+- **前端实现**: [`code/mathflow-new/src/`](code/mathflow-new/src/)
+  - `components/ScratchPad/` - 草稿纸组件
+  - `lib/factorization.ts` - 代数运算逻辑
+  - `lib/calculus.ts` - 微积分 API 调用
+
+更新文档时请确保：
+1. 功能列表与实际实现一致
+2. API 端点与 `main.py` 中的定义匹配
+3. 技术细节与源代码对应
 
 ## 许可证
 
