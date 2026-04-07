@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
 import { useTheme } from '../hooks/use-theme';
 import { useToast } from '../hooks/use-toast';
-import { supabase } from '../lib/supabase';
+import { getDerivation, getStepsForDerivation, saveDerivation as saveDerivationToDB, createDerivation, upsertDerivation, toComponentStep, toDbStep, Derivation } from '../lib/db';
 import { ScratchPad, DerivationStep } from '../components/ScratchPad';
 import AIChat from '../components/AIChat';
 import {
   ArrowLeft,
-  Save,
   Download,
   Sun,
   Moon,
@@ -25,14 +23,13 @@ import { Sheet } from '../components/ui/Sheet';
 export default function ScratchPadPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const { success, error: showError } = useToast();
 
   const [title, setTitle] = useState('新推导');
   const [steps, setSteps] = useState<DerivationStep[]>([]);
   const [derivationId, setDerivationId] = useState<string | null>(id || null);
-  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showAI, setShowAI] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
     const saved = localStorage.getItem('ai_panel_width');
@@ -42,10 +39,55 @@ export default function ScratchPadPage() {
   const [mobileAIMenuOpen, setMobileAIMenuOpen] = useState(false);
 
   const resizeRef = useRef<HTMLDivElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (id) loadDerivation(id);
   }, [id]);
+
+  // Auto-save with 500ms debounce
+  useEffect(() => {
+    // Don't auto-save if there are no steps (empty new derivation)
+    if (steps.length === 0) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        setSaveStatus('saving');
+        let dId = derivationId;
+        if (!dId) {
+          // First edit -- create the derivation record
+          const newDer = await createDerivation(title);
+          dId = newDer.id;
+          setDerivationId(dId);
+        } else {
+          // Update title/timestamp
+          await upsertDerivation({
+            id: dId, title,
+            description: null,
+            created_at: '',
+            updated_at: new Date().toISOString()
+          });
+        }
+
+        if (dId) {
+          const dbSteps = steps.map((s, i) => toDbStep(s, dId, i));
+          // Get existing derivation for created_at
+          const existing = await getDerivation(dId);
+          await saveDerivationToDB(
+            { id: dId, title, description: null, created_at: existing?.created_at || new Date().toISOString(), updated_at: new Date().toISOString() },
+            dbSteps
+          );
+        }
+        setSaveStatus('saved');
+      } catch (err) {
+        console.warn('Auto-save failed:', err);
+        setSaveStatus('idle');
+      }
+    }, 500);
+
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [steps, title, derivationId]);
 
   // 处理拖拽调整宽度
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -85,115 +127,17 @@ export default function ScratchPadPage() {
   }, [isResizing, aiPanelWidth]);
 
   const loadDerivation = async (derivationId: string) => {
-    console.log('Loading derivation:', derivationId);
-    const [derivationRes, stepsRes] = await Promise.all([
-      supabase.from('derivations').select('*').eq('id', derivationId).maybeSingle(),
-      supabase.from('derivation_steps').select('*').eq('derivation_id', derivationId).order('step_number')
-    ]);
-
-    if (derivationRes.error) {
-      console.error('Error loading derivation:', derivationRes.error);
-      showError(`加载推导失败: ${derivationRes.error.message}`);
-    }
-
-    if (derivationRes.data) {
-      setTitle(derivationRes.data.title);
-    }
-
-    if (stepsRes.error) {
-      console.error('Error loading steps:', stepsRes.error);
-      showError(`加载步骤失败: ${stepsRes.error.message}`);
-    }
-
-    if (stepsRes.data) {
-      console.log('Loaded steps:', stepsRes.data);
-      const localSteps: DerivationStep[] = stepsRes.data.map(s => ({
-        id: s.id,
-        stepNumber: s.step_number,
-        latex: s.output_latex,
-        operation: s.operation || 'Input',
-        annotation: s.annotation || '',
-        timestamp: new Date(s.created_at).getTime(),
-      }));
-      setSteps(localSteps);
-    }
-  };
-
-  const saveDerivation = async () => {
-    if (!user) {
-      showError('请先登录再保存！');
-      return;
-    }
-    setSaving(true);
-
     try {
-      let dId = derivationId;
-      console.log('Saving derivation for user:', user.id);
+      const derivation = await getDerivation(derivationId);
+      if (derivation) setTitle(derivation.title);
 
-      if (!dId) {
-        console.log('Creating new derivation...');
-        const { data, error } = await supabase
-          .from('derivations')
-          .insert({ user_id: user.id, title })
-          .select()
-          .maybeSingle();
-
-        if (error) {
-          console.error('Failed to create derivation:', error);
-          throw error;
-        }
-
-        if (data) {
-          dId = data.id;
-          setDerivationId(dId);
-          console.log('Created derivation:', dId);
-        }
-      } else {
-        console.log('Updating derivation:', dId);
-        const { error } = await supabase
-          .from('derivations')
-          .update({ title, updated_at: new Date().toISOString() })
-          .eq('id', dId);
-
-        if (error) {
-          console.error('Failed to update derivation:', error);
-          throw error;
-        }
+      const dbSteps = await getStepsForDerivation(derivationId);
+      if (dbSteps.length > 0) {
+        setSteps(dbSteps.map(toComponentStep));
       }
-
-      if (dId) {
-        console.log('Deleting old steps for:', dId);
-        const { error: deleteError } = await supabase.from('derivation_steps').delete().eq('derivation_id', dId);
-        if (deleteError) {
-          console.error('Failed to delete old steps:', deleteError);
-          throw deleteError;
-        }
-
-        if (steps.length > 0) {
-          const stepsToInsert = steps.map((s, i) => ({
-            derivation_id: dId!,
-            step_number: i + 1,
-            input_latex: i > 0 ? steps[i - 1].latex : '',
-            output_latex: s.latex || '',
-            operation: s.operation || 'Input',
-            annotation: s.annotation || '',
-            is_verified: false
-          }));
-
-          console.log('Inserting new steps:', stepsToInsert);
-          const { error: insertError } = await supabase.from('derivation_steps').insert(stepsToInsert);
-          if (insertError) {
-            console.error('Failed to insert new steps:', insertError);
-            throw insertError;
-          }
-        }
-      }
-      success('保存成功！');
-    } catch (err: any) {
-      console.error('Save failed:', err);
-      showError(`保存失败: ${err.message || '未知错误'}`);
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      console.error('Error loading derivation:', err);
+      showError('加载推导失败');
     }
   };
 
@@ -233,15 +177,6 @@ export default function ScratchPadPage() {
         </button>
 
         <div className="w-8 h-px bg-border" />
-
-        <button
-          onClick={saveDerivation}
-          disabled={saving}
-          className="p-3 hover:bg-background-tertiary rounded-xl transition-colors disabled:opacity-50"
-          title={saving ? '保存中...' : '保存'}
-        >
-          <Save size={20} className={saving ? 'text-foreground-muted animate-pulse' : 'text-secondary'} />
-        </button>
 
         <button
           onClick={exportDerivation}
@@ -297,20 +232,11 @@ export default function ScratchPadPage() {
             className="flex-1 px-2 py-1 bg-transparent border-b-2 border-transparent hover:border-border focus:border-primary text-foreground font-medium transition-colors outline-none"
             placeholder="输入标题..."
           />
-          {derivationId && (
-            <span className="text-xs text-success">已保存</span>
-          )}
+          {saveStatus === 'saving' && <span className="text-xs text-warning">保存中...</span>}
+          {saveStatus === 'saved' && <span className="text-xs text-success">已同步</span>}
 
           {/* Mobile Actions */}
           <div className="flex md:hidden items-center gap-2 ml-auto">
-            <button
-              onClick={saveDerivation}
-              disabled={saving}
-              className="p-2 hover:bg-background-tertiary rounded-lg transition-colors disabled:opacity-50"
-              title="保存"
-            >
-              <Save size={18} className={saving ? 'text-foreground-muted animate-pulse' : 'text-secondary'} />
-            </button>
             <button
               onClick={() => setMobileAIMenuOpen(true)}
               className="p-2 hover:bg-background-tertiary rounded-lg transition-colors"
