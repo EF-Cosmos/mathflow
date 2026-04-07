@@ -1,0 +1,98 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "category": "algebra",
+    "name": "一元二次方程",
+    "description": "标准形式的一元二次方程",
+    "latex_template": "x^2 + bx + c = 0",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "category": "algebra",
+    "name": "完全平方公式",
+    "description": "两数和的平方展开公式",
+    "latex_template": "(a + b)^2 = a^2 + 2ab + b^2",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "category": "algebra",
+    "name": "平方差公式",
+    "description": "两数平方差因式分解公式",
+    "latex_template": "a^2 - b^2 = (a+b)(a-b)",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "category": "algebra",
+    "name": "韦达定理",
+    "description": "一元二次方程两根之间的关系",
+    "latex_template": "x_1 + x_2 = -\\frac{b}{a}",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+    "category": "algebra",
+    "name": "求根公式",
+    "description": "一元二次方程的通用求解公式",
+    "latex_template": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    "category": "algebra",
+    "name": "因式分解",
+    "description": "对二次三项式进行因式分解",
+    "latex_template": "x^2 - 5x + 6",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+    "category": "calculus",
+    "name": "导数定义",
+    "description": "函数在某一点的导数定义",
+    "latex_template": "f'(x) = \\lim_{\\Delta x \\to 0} \\frac{f(x+\\Delta x) - f(x)}{\\Delta x}",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+    "category": "calculus",
+    "name": "幂函数积分",
+    "description": "幂函数的不定积分公式",
+    "latex_template": "\\int x^n \\, dx = \\frac{x^{n+1}}{n+1} + C",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+    "category": "calculus",
+    "name": "链式法则",
+    "description": "复合函数的求导法则",
+    "latex_template": "\\frac{d}{dx}[f(g(x))] = f'(g(x)) \\cdot g'(x)",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
+    "category": "linear_algebra",
+    "name": "二阶行列式",
+    "description": "二阶行列式的计算公式",
+    "latex_template": "\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix} = ad - bc",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "e1f2a3b4-c5d6-7890-efab-901234567890",
+    "category": "linear_algebra",
+    "name": "矩阵乘法",
+    "description": "两个二阶矩阵的乘法",
+    "latex_template": "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix} \\begin{pmatrix} e & f \\\\ g & h \\end{pmatrix}",
+    "created_at": "2026-01-01T00:00:00Z"
+  },
+  {
+    "id": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+    "category": "linear_algebra",
+    "name": "二元一次方程组",
+    "description": "二元一次方程组的矩阵表示",
+    "latex_template": "\\begin{cases} a_1 x + b_1 y = c_1 \\\\ a_2 x + b_2 y = c_2 \\end{cases}",
+    "created_at": "2026-01-01T00:00:00Z"
+  }
+]
