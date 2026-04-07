@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MathTemplate } from '../lib/supabase';
+import { MathTemplate } from '../lib/db';
 import MathRenderer from './MathRenderer';
 import { ChevronDown, ChevronRight, Calculator, Sigma, Grid3X3, Percent, BookOpen } from 'lucide-react';
 
