@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01: Create IndexedDB storage layer (lib/db.ts) and template seed data
-- [ ] 01-02: Remove Supabase/auth, migrate pages to IndexedDB, add auto-save
+- [x] 01-02: Remove Supabase/auth, migrate pages to IndexedDB, add auto-save
 
 ### Phase 2: Operation Reliability
 **Goal**: Every math operation result displayed to the user is verified to be mathematically correct, with no silent wrong answers

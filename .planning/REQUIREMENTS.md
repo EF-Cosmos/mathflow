@@ -10,8 +10,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Storage & Deployment
 
 - [x] **STOR-01**: User data (derivations, steps) persists locally via IndexedDB without external services
-- [ ] **STOR-02**: App starts and runs without Supabase credentials or network access
-- [ ] **STOR-03**: Existing Supabase auth code removed — app opens directly to workspace with no login
+- [x] **STOR-02**: App starts and runs without Supabase credentials or network access
+- [x] **STOR-03**: Existing Supabase auth code removed — app opens directly to workspace with no login
 - [ ] **STOR-04**: Single command (`./start.sh` or `start.bat`) launches both frontend and backend
 - [ ] **STOR-05**: Startup script checks backend health before opening frontend
 
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | STOR-01 | Phase 1 | Complete |
-| STOR-02 | Phase 1 | Pending |
-| STOR-03 | Phase 1 | Pending |
+| STOR-02 | Phase 1 | Complete |
+| STOR-03 | Phase 1 | Complete |
 | STOR-04 | Phase 6 | Pending |
 | STOR-05 | Phase 6 | Pending |
 | RELI-01 | Phase 2 | Pending |
