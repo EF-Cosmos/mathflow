@@ -2,15 +2,16 @@ import { useState } from 'react';
 import InteractiveFormula, { TermAction, ActionHint } from './InteractiveFormula';
 import MathRenderer from '../MathRenderer';
 import { ParsedTerm } from '../../lib/equation';
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  Edit3, 
-  Trash2, 
-  Copy, 
+import {
+  ChevronDown,
+  ChevronRight,
+  Edit3,
+  Trash2,
+  Copy,
   Check,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 
 export interface DerivationStep {
@@ -20,6 +21,7 @@ export interface DerivationStep {
   operation: string;
   annotation?: string;
   timestamp: number;
+  verified?: boolean;  // undefined = not checked, true = verified, false = unverified
 }
 
 interface StepCardProps {
@@ -83,16 +85,20 @@ export default function StepCard({
     }
   };
 
+  // Determine border and shadow based on verification status
+  const isUnverified = step.verified === false;
+
+  let containerClasses: string;
+  if (isUnverified) {
+    containerClasses = 'relative group bg-white dark:bg-[#1a1a1a] border-2 border-amber-400 dark:border-amber-600 rounded-xl transition-all duration-200';
+  } else if (isLast) {
+    containerClasses = 'relative group bg-white dark:bg-[#1a1a1a] border-2 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-500/10 rounded-xl transition-all duration-200';
+  } else {
+    containerClasses = 'relative group bg-white/80 dark:bg-[#171717]/80 border border-gray-200 dark:border-gray-800 rounded-xl transition-all duration-200 hover:bg-white dark:hover:bg-[#1a1a1a] hover:shadow-md';
+  }
+
   return (
-    <div className={`
-      relative group
-      ${isLast 
-        ? 'bg-white dark:bg-[#1a1a1a] border-2 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-500/10' 
-        : 'bg-white/80 dark:bg-[#171717]/80 border border-gray-200 dark:border-gray-800'
-      }
-      rounded-xl transition-all duration-200
-      ${!isLast && 'hover:bg-white dark:hover:bg-[#1a1a1a] hover:shadow-md'}
-    `}>
+    <div className={containerClasses}>
       {/* 连接线 */}
       {!isLast && (
         <div className="absolute left-1/2 -bottom-4 w-px h-4 bg-gradient-to-b from-gray-300 to-transparent dark:from-gray-700" />
@@ -214,12 +220,26 @@ export default function StepCard({
                 {step.annotation}
               </div>
             )}
+
+            {/* 未验证结果警告 */}
+            {isUnverified && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                结果未通过数学验证 — 可能存在错误
+              </p>
+            )}
           </div>
         )}
       </div>
 
-      {/* 最后一步的高亮指示 */}
-      {isLast && (
+      {/* 步骤右上角徽章：未验证 或 当前 */}
+      {isUnverified ? (
+        <div className="absolute -top-2 -right-2">
+          <div className="flex items-center gap-1 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded-full shadow-lg">
+            <AlertTriangle size={12} />
+            未验证
+          </div>
+        </div>
+      ) : isLast && (
         <div className="absolute -top-2 -right-2">
           <div className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded-full shadow-lg">
             <Sparkles size={12} />

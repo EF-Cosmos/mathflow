@@ -183,6 +183,7 @@ export function toComponentStep(dbStep: DerivationStep): {
   operation: string;
   annotation: string;
   timestamp: number;
+  verified?: boolean;
 } {
   return {
     id: dbStep.id,
@@ -191,6 +192,7 @@ export function toComponentStep(dbStep: DerivationStep): {
     operation: dbStep.operation ?? '',
     annotation: dbStep.annotation ?? '',
     timestamp: new Date(dbStep.created_at).getTime(),
+    verified: dbStep.is_verified ? true : undefined,  // Only set true if verified, undefined otherwise
   };
 }
 
@@ -202,6 +204,7 @@ export function toDbStep(
     latex: string;
     operation: string;
     annotation: string;
+    verified?: boolean;
   },
   derivationId: string,
   stepIndex: number,
@@ -214,7 +217,7 @@ export function toDbStep(
     output_latex: componentStep.latex,
     operation: componentStep.operation,
     annotation: componentStep.annotation,
-    is_verified: false,
+    is_verified: componentStep.verified ?? false,
     created_at: new Date().toISOString(),
   };
 }

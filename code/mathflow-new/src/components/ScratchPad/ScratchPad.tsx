@@ -12,7 +12,7 @@ import {
   formatTerms,
   ParsedTerm
 } from '../../lib/equation';
-import { factorEquation, factorWithFallback, expandWithFallback, simplifyWithFallback } from '../../lib/factorization';
+import { factorEquation, factorWithFallback, expandWithFallback, simplifyWithFallback, VerifiedResult, verifyResult } from '../../lib/factorization';
 import { applyCalculusOperation } from '../../lib/calculus';
 import { 
   Plus, 
@@ -111,7 +111,7 @@ export default function ScratchPad({
   }, [historyIndex, history]);
 
   // 添加步骤
-  const addStep = useCallback((latex: string, operation: string = 'Input') => {
+  const addStep = useCallback((latex: string, operation: string = 'Input', verified?: boolean) => {
     if (!latex.trim()) return;
 
     const newStep: DerivationStep = {
@@ -120,6 +120,7 @@ export default function ScratchPad({
       latex: latex.trim(),
       operation,
       timestamp: Date.now(),
+      verified,
     };
 
     const newSteps = [...steps, newStep];
@@ -287,7 +288,7 @@ export default function ScratchPad({
       // 1. 尝试本地 + SymPy（快速回退）
       const fallbackResult = await factorWithFallback(baseLatex);
       if (fallbackResult) {
-        addStep(fallbackResult, operationName);
+        addStep(fallbackResult.result, operationName, fallbackResult.verified);
         return;
       }
 
@@ -353,7 +354,7 @@ export default function ScratchPad({
     if (operationName === '展开') {
       const expandResult = await expandWithFallback(baseLatex);
       if (expandResult) {
-        addStep(expandResult, operationName);
+        addStep(expandResult.result, operationName, expandResult.verified);
         return;
       }
 
@@ -419,7 +420,7 @@ export default function ScratchPad({
     if (operationName === '化简') {
       const simplifyResult = await simplifyWithFallback(baseLatex);
       if (simplifyResult) {
-        addStep(simplifyResult, operationName);
+        addStep(simplifyResult.result, operationName, simplifyResult.verified);
         return;
       }
 
@@ -570,7 +571,9 @@ export default function ScratchPad({
     const result = await applyCalculusOperation(operationName, baseLatex, params);
 
     if (result) {
-      addStep(result, operationName);
+      // Verify the calculus result before displaying
+      const verified = await verifyResult(baseLatex, result);
+      addStep(result, operationName, verified);
     } else {
       // API 失败，尝试 AI 辅助
       if (aiAssistEnabled) {

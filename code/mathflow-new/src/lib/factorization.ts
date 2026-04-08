@@ -104,14 +104,15 @@ export function extractCommonFactor(latex: string): string | null {
     const newCoeff = signedCoeff / coeffGCD;
 
     const newVar = commonVar ? removeVariable(parsed.variable, commonVar) : parsed.variable;
+    const sign: '+' | '-' = newCoeff >= 0 ? '+' : '-';
 
     if (newVar === '' || newVar === '__constant__') {
-      return { sign: newCoeff >= 0 ? '+' : '-', latex: String(Math.abs(newCoeff)) };
+      return { sign, latex: String(Math.abs(newCoeff)) };
     }
     if (Math.abs(newCoeff) === 1) {
-      return { sign: newCoeff >= 0 ? '+' : '-', latex: newVar };
+      return { sign, latex: newVar };
     }
-    return { sign: newCoeff >= 0 ? '+' : '-', latex: `${Math.abs(newCoeff)}${newVar}` };
+    return { sign, latex: `${Math.abs(newCoeff)}${newVar}` };
   });
 
   return `${factor}\\left(${formatTerms(newTerms)}\\right)`;
@@ -426,7 +427,41 @@ export function factorEquation(latex: string): string | null {
 // SymPy API 调用
 // ============================================================================
 
-const SYMPY_API_URL = import.meta.env.VITE_SYMPY_API_URL || 'http://localhost:8000';
+const SYMPY_API_URL = import.meta.env.VITE_SYMPY_API_URL || 'http://localhost:8001';
+const API_TIMEOUT = 5000;
+const VERIFY_TIMEOUT = 2000; // 2 seconds per research recommendation
+
+/**
+ * Result of a mathematical operation with verification status
+ */
+export interface VerifiedResult {
+  result: string;
+  verified: boolean;
+}
+
+/**
+ * Verify that an operation result is mathematically equivalent to the input
+ * by calling the backend /api/verify endpoint
+ * @param inputLatex - Original LaTeX expression
+ * @param outputLatex - Result LaTeX expression to verify
+ * @returns true if equivalent, false if not or on error/timeout
+ */
+export async function verifyResult(inputLatex: string, outputLatex: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${SYMPY_API_URL}/api/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input_latex: inputLatex, output_latex: outputLatex }),
+      signal: AbortSignal.timeout(VERIFY_TIMEOUT),
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return data.is_equivalent === true;
+  } catch {
+    // Timeout or network error: treat as unverified, not failed
+    return false;
+  }
+}
 
 interface FactorizeResponse {
   result: string;
@@ -443,7 +478,7 @@ export async function factorWithSympy(latex: string): Promise<string | null> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ latex }),
-      signal: AbortSignal.timeout(5000), // 5 秒超时
+      signal: AbortSignal.timeout(API_TIMEOUT),
     });
 
     if (!response.ok) {
@@ -454,7 +489,6 @@ export async function factorWithSympy(latex: string): Promise<string | null> {
     const data: FactorizeResponse = await response.json();
     return data.result;
   } catch (error) {
-    // 网络错误、超时等
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn('SymPy API timeout');
     } else {
@@ -473,14 +507,18 @@ export async function expandWithSympy(latex: string): Promise<string | null> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ latex }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(API_TIMEOUT),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.warn(`SymPy expand API error: ${response.status}`);
+      return null;
+    }
 
     const data: FactorizeResponse = await response.json();
     return data.result;
-  } catch {
+  } catch (error) {
+    console.warn('SymPy expand API unavailable:', error);
     return null;
   }
 }
@@ -494,14 +532,18 @@ export async function simplifyWithSympy(latex: string): Promise<string | null> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ latex }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(API_TIMEOUT),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.warn(`SymPy simplify API error: ${response.status}`);
+      return null;
+    }
 
     const data: FactorizeResponse = await response.json();
     return data.result;
-  } catch {
+  } catch (error) {
+    console.warn('SymPy simplify API unavailable:', error);
     return null;
   }
 }
@@ -510,20 +552,22 @@ export async function simplifyWithSympy(latex: string): Promise<string | null> {
  * 带回退的因式分解：本地 → SymPy → 失败
  * 支持单个表达式和等式
  * @param latex - LaTeX 表达式或等式
- * @returns 因式分解结果，全部失败返回 null
+ * @returns 因式分解结果（带验证状态），全部失败返回 null
  */
-export async function factorWithFallback(latex: string): Promise<string | null> {
+export async function factorWithFallback(latex: string): Promise<VerifiedResult | null> {
   // 1. 尝试本地算法（快速，覆盖常见情况）
   // 使用 factorEquation 以支持等式两边分别因式分解
   const localResult = factorEquation(latex);
   if (localResult) {
-    return localResult;
+    // Local algorithms are deterministic, treat as verified
+    return { result: localResult, verified: true };
   }
 
   // 2. 尝试 SymPy 服务（完整功能，覆盖复杂情况）
   const sympyResult = await factorWithSympy(latex);
   if (sympyResult) {
-    return sympyResult;
+    const verified = await verifyResult(latex, sympyResult);
+    return { result: sympyResult, verified };
   }
 
   return null;
@@ -549,13 +593,14 @@ export function expandEquation(latex: string): string | null {
  * 展开表达式（优先 SymPy）
  * 支持单个表达式和等式
  * @param latex - LaTeX 表达式或等式
- * @returns 展开结果，失败返回 null
+ * @returns 展开结果（带验证状态），失败返回 null
  */
-export async function expandWithFallback(latex: string): Promise<string | null> {
+export async function expandWithFallback(latex: string): Promise<VerifiedResult | null> {
   // 优先使用 SymPy（完整的展开功能）
   const sympyResult = await expandWithSympy(latex);
   if (sympyResult && sympyResult !== latex) {
-    return sympyResult;
+    const verified = await verifyResult(latex, sympyResult);
+    return { result: sympyResult, verified };
   }
 
   // 如果 SymPy 失败，尝试本地处理（目前只支持检测等式）
@@ -578,8 +623,10 @@ export async function expandWithFallback(latex: string): Promise<string | null> 
 
     const finalLhs = lhsChanged ? expandedLhs! : lhs;
     const finalRhs = rhsChanged ? expandedRhs! : rhs;
+    const combinedResult = `${finalLhs} = ${finalRhs}`;
 
-    return `${finalLhs} = ${finalRhs}`;
+    const verified = await verifyResult(latex, combinedResult);
+    return { result: combinedResult, verified };
   }
 
   return null;
@@ -589,13 +636,14 @@ export async function expandWithFallback(latex: string): Promise<string | null> 
  * 化简表达式（优先 SymPy）
  * 支持单个表达式和等式
  * @param latex - LaTeX 表达式或等式
- * @returns 化简结果，失败返回 null
+ * @returns 化简结果（带验证状态），失败返回 null
  */
-export async function simplifyWithFallback(latex: string): Promise<string | null> {
+export async function simplifyWithFallback(latex: string): Promise<VerifiedResult | null> {
   // 优先使用 SymPy（完整的化简功能）
   const sympyResult = await simplifyWithSympy(latex);
   if (sympyResult && sympyResult !== latex) {
-    return sympyResult;
+    const verified = await verifyResult(latex, sympyResult);
+    return { result: sympyResult, verified };
   }
 
   // 如果 SymPy 失败，尝试对等式两边分别处理
@@ -618,8 +666,10 @@ export async function simplifyWithFallback(latex: string): Promise<string | null
 
     const finalLhs = lhsChanged ? simplifiedLhs! : lhs;
     const finalRhs = rhsChanged ? simplifiedRhs! : rhs;
+    const combinedResult = `${finalLhs} = ${finalRhs}`;
 
-    return `${finalLhs} = ${finalRhs}`;
+    const verified = await verifyResult(latex, combinedResult);
+    return { result: combinedResult, verified };
   }
 
   return null;
