@@ -1,13 +1,103 @@
+import re
 import sympy
 from sympy.parsing.latex import parse_latex
 from sympy import latex, Symbol
 from typing import Optional
 
 
-def parse_latex_safe(latex_str: str) -> Optional[sympy.Expr]:
-    """安全地解析 LaTeX 表达式"""
+def normalize_latex(latex_str: str) -> str:
+    """
+    Normalize LaTeX notation variants before SymPy parsing.
+
+    Most LaTeX constructs (\\cdot, \\times, \\left/\\right, \\div, \\sin, etc.)
+    are already handled natively by SymPy's parse_latex. This function serves as
+    a safety net for edge cases and ensures consistent handling.
+
+    Key principle: Do NOT strip backslashes from function commands (\\sin -> sin)
+    because parse_latex recognizes \\sin but treats bare 'sin' as s*i*n.
+
+    Args:
+        latex_str: Raw LaTeX string from user input
+
+    Returns:
+        Normalized string suitable for SymPy parse_latex
+    """
+    if not latex_str:
+        return latex_str
+
+    normalized = latex_str
+
+    # Step 1: LaTeX multiplication operators -> standard * for safety
+    # parse_latex handles these, but explicit replacement ensures consistency
+    normalized = normalized.replace(r'\times', '*')
+    normalized = normalized.replace(r'\cdot', '*')
+
+    # Step 2: Delimiters -> plain brackets for safety
+    normalized = normalized.replace(r'\left(', '(')
+    normalized = normalized.replace(r'\right)', ')')
+    normalized = normalized.replace(r'\left[', '[')
+    normalized = normalized.replace(r'\right]', ']')
+    normalized = normalized.replace(r'\left\{', '{')
+    normalized = normalized.replace(r'\right\}', '}')
+
+    # Step 3: Division operator
+    normalized = normalized.replace(r'\div', '/')
+
+    # Step 4: Clean up extra spaces around operators for cleaner input
+    normalized = re.sub(r'\s*\*\s*', '*', normalized)
+    normalized = re.sub(r'\s*/\s*', '/', normalized)
+
+    return normalized
+
+
+def verify_equivalence(input_latex: str, output_latex: str) -> bool:
+    """
+    Verify if two LaTeX expressions are mathematically equivalent.
+
+    Uses SymPy's equals() method first (more robust for trig identities),
+    with simplify(input - output) == 0 as fallback.
+
+    Args:
+        input_latex: Original expression in LaTeX
+        output_latex: Result expression in LaTeX
+
+    Returns:
+        True if expressions are mathematically equivalent, False otherwise.
+        Returns False on any parsing/computation error (never crashes).
+    """
     try:
-        return parse_latex(latex_str)
+        if not input_latex or not output_latex:
+            return False
+
+        # Parse both to SymPy expressions (normalize inside parse_latex_safe)
+        expr_input = parse_latex_safe(input_latex)
+        expr_output = parse_latex_safe(output_latex)
+
+        # Method 1: Try equals() first (more robust, handles trig identities)
+        try:
+            if expr_input.equals(expr_output):
+                return True
+        except Exception:
+            pass
+
+        # Method 2: Fallback to simplify(input - output) == 0
+        try:
+            diff = sympy.simplify(expr_input - expr_output)
+            return diff == 0
+        except Exception:
+            pass
+
+        return False
+    except Exception:
+        # On any error, return False (not a crash)
+        return False
+
+
+def parse_latex_safe(latex_str: str) -> Optional[sympy.Expr]:
+    """安全地解析 LaTeX 表达式，先进行规范化处理"""
+    try:
+        normalized = normalize_latex(latex_str)
+        return parse_latex(normalized)
     except Exception as e:
         raise ValueError(f"无法解析 LaTeX: {str(e)}")
 

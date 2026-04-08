@@ -3,3 +3,5 @@ uvicorn[standard]==0.32.0
 pydantic==2.10.0
 sympy==1.13.1
 antlr4-python3-runtime==4.11.1
+pytest>=7.0.0
+httpx>=0.24.0
