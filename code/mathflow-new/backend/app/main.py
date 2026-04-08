@@ -9,6 +9,8 @@ from .models import (
     ExpandResponse,
     SimplifyRequest,
     SimplifyResponse,
+    VerifyRequest,
+    VerifyResponse,
     # 微积分模型
     CalculusRequest,
     CalculusResponse,
@@ -26,6 +28,7 @@ from .services.sympy_service import (
     factor_expression,
     expand_expression,
     simplify_expression,
+    verify_equivalence,
     # 微积分函数
     differentiate_expr,
     partial_derivative,
@@ -83,6 +86,7 @@ async def root():
                 "factor": "/api/factor - 因式分解",
                 "expand": "/api/expand - 展开",
                 "simplify": "/api/simplify - 化简",
+                "verify": "/api/verify - 验证等价性",
             },
             "基础微积分": {
                 "differentiate": "/api/calculus/differentiate - 求导",
@@ -171,6 +175,25 @@ async def simplify_endpoint(request: SimplifyRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"化简失败: {str(e)}")
+
+
+@app.post("/api/verify", response_model=VerifyResponse)
+async def verify_endpoint(request: VerifyRequest):
+    """
+    验证两个表达式是否数学等价
+
+    示例:
+    - 输入: {"input_latex": "x^2 - 4", "output_latex": "(x-2)(x+2)"}
+    - 输出: {"is_equivalent": true}
+    """
+    try:
+        is_equiv = verify_equivalence(request.input_latex, request.output_latex)
+        return VerifyResponse(is_equivalent=is_equiv)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        # On verification error, return False (not crash)
+        return VerifyResponse(is_equivalent=False)
 
 
 # ==================== 基础微积分端点 ====================

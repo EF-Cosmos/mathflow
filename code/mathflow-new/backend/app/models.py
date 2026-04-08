@@ -26,6 +26,15 @@ class SimplifyResponse(BaseModel):
     result: str = Field(..., description="化简后的 LaTeX 表达式")
 
 
+class VerifyRequest(BaseModel):
+    input_latex: str = Field(..., description="原始表达式的 LaTeX")
+    output_latex: str = Field(..., description="操作结果表达式的 LaTeX")
+
+
+class VerifyResponse(BaseModel):
+    is_equivalent: bool = Field(..., description="两个表达式是否数学等价")
+
+
 # ==================== 微积分模型 ====================
 
 class CalculusRequest(BaseModel):
