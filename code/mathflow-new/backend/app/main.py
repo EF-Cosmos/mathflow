@@ -23,6 +23,13 @@ from .models import (
     VectorFieldRequest,
     DoubleIntegralRequest,
     TripleIntegralRequest,
+    # 求解模型
+    SolveEquationRequest,
+    SolveEquationResponse,
+    SolveInequalityRequest,
+    SolveInequalityResponse,
+    SolveSystemRequest,
+    SolveSystemResponse,
 )
 from .services.sympy_service import (
     factor_expression,
@@ -47,6 +54,11 @@ from .services.vector_calculus import (
     compute_divergence,
     compute_curl,
     compute_laplacian,
+)
+from .services.solve_service import (
+    solve_equation_with_steps,
+    solve_inequality_with_steps,
+    solve_system_with_steps,
 )
 
 
@@ -110,6 +122,11 @@ async def root():
             "多重积分": {
                 "double": "/api/integral/double - 二重积分",
                 "triple": "/api/integral/triple - 三重积分",
+            },
+            "求解": {
+                "equation": "/api/solve/equation - 求解方程",
+                "inequality": "/api/solve/inequality - 求解不等式",
+                "system": "/api/solve/system - 求解方程组",
             },
             "health": "/health - 健康检查",
         }
@@ -498,3 +515,41 @@ async def triple_integral_endpoint(request: TripleIntegralRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"三重积分计算失败: {str(e)}")
+
+
+# ==================== 求解端点 ====================
+
+@app.post("/api/solve/equation", response_model=SolveEquationResponse)
+async def solve_equation_endpoint(request: SolveEquationRequest):
+    """求解方程（一元一次、一元二次、分式方程）"""
+    try:
+        result = solve_equation_with_steps(request.latex)
+        return SolveEquationResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"求解失败: {str(e)}")
+
+
+@app.post("/api/solve/inequality", response_model=SolveInequalityResponse)
+async def solve_inequality_endpoint(request: SolveInequalityRequest):
+    """求解不等式（一元一次、一元二次）"""
+    try:
+        result = solve_inequality_with_steps(request.latex)
+        return SolveInequalityResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"求解失败: {str(e)}")
+
+
+@app.post("/api/solve/system", response_model=SolveSystemResponse)
+async def solve_system_endpoint(request: SolveSystemRequest):
+    """求解方程组"""
+    try:
+        result = solve_system_with_steps(request.equations, request.variables)
+        return SolveSystemResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"求解失败: {str(e)}")

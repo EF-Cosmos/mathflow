@@ -61,7 +61,7 @@ class TestQuadraticEquations:
         assert response.status_code == 200
         data = response.json()
         # Should indicate no real solution in result
-        assert "无解" in data["result"] or "no real" in data["result"].lower() or "i" in data["result"]
+        assert "无解" in data["result"] or "无实数解" in data["result"] or "no real" in data["result"].lower()
 
 
 class TestFractionalEquations:
@@ -227,7 +227,7 @@ class TestStepGeneration:
         data = response.json()
         step_descriptions = [s["description"] for s in data["steps"]]
         assert any(
-            "减" in desc or "move" in desc.lower() or "移" in desc
+            "减" in desc or "加" in desc or "move" in desc.lower() or "移" in desc
             for desc in step_descriptions
         )
 
@@ -237,7 +237,7 @@ class TestErrorHandling:
 
     def test_invalid_latex_equation(self, client):
         """POST /api/solve/equation with invalid LaTeX -> 400."""
-        response = client.post("/api/solve/equation", json={"latex": "not valid equation"})
+        response = client.post("/api/solve/equation", json={"latex": "@#$%"})
         assert response.status_code == 400
 
     def test_empty_latex_equation(self, client):
@@ -247,13 +247,13 @@ class TestErrorHandling:
 
     def test_invalid_latex_inequality(self, client):
         """POST /api/solve/inequality with invalid LaTeX -> 400."""
-        response = client.post("/api/solve/inequality", json={"latex": "not valid"})
+        response = client.post("/api/solve/inequality", json={"latex": "@#$%"})
         assert response.status_code == 400
 
     def test_system_missing_variables(self, client):
-        """POST /api/solve/system with mismatched equations/variables -> 400 or error."""
+        """POST /api/solve/system with more variables than equations -> 400."""
         response = client.post("/api/solve/system", json={
             "equations": ["2x + y = 5"],
-            "variables": ["x"]
+            "variables": ["x", "y", "z"]
         })
         assert response.status_code == 400

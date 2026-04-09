@@ -100,3 +100,49 @@ class TripleIntegralRequest(BaseModel):
     latex: str = Field(..., description="LaTeX 表达式")
     variables: List[str] = Field(default=["x", "y", "z"], description="积分变量")
     limits: List[List[str]] = Field(..., description="三组积分限")
+
+
+# ==================== 求解模型 ====================
+
+class SolveStep(BaseModel):
+    description: str = Field(..., description="变换说明，如'两边减 3'")
+    latex: str = Field(..., description="中间结果 LaTeX")
+
+
+class SolveEquationRequest(BaseModel):
+    latex: str = Field(..., description="方程的 LaTeX 表达式，如 2x + 3 = 7")
+
+
+class SolveEquationResponse(BaseModel):
+    result: str = Field(..., description="最终解的 LaTeX")
+    steps: List[SolveStep] = Field(..., description="求解步骤列表")
+    verified: bool = Field(default=False, description="结果是否经过验证")
+
+
+class SolveInequalityRequest(BaseModel):
+    latex: str = Field(..., description="不等式的 LaTeX 表达式，如 2x + 3 > 7")
+
+
+class IntervalData(BaseModel):
+    lower: Optional[float] = Field(None, description="区间下界，null 表示负无穷")
+    upper: Optional[float] = Field(None, description="区间上界，null 表示正无穷")
+    lower_strict: bool = Field(True, description="下界是否为开区间（不包含）")
+    upper_strict: bool = Field(True, description="上界是否为开区间（不包含）")
+
+
+class SolveInequalityResponse(BaseModel):
+    result: str = Field(..., description="解集的 LaTeX 表达式")
+    steps: List[SolveStep] = Field(..., description="求解步骤列表")
+    intervals: List[IntervalData] = Field(default_factory=list, description="解集区间数据，供前端数轴图使用")
+    verified: bool = Field(default=False, description="结果是否经过验证")
+
+
+class SolveSystemRequest(BaseModel):
+    equations: List[str] = Field(..., description="方程列表，每个元素是一个方程的 LaTeX")
+    variables: List[str] = Field(..., description="变量名列表，如 ['x', 'y']")
+
+
+class SolveSystemResponse(BaseModel):
+    result: str = Field(..., description="最终解的 LaTeX")
+    steps: List[SolveStep] = Field(..., description="求解步骤列表")
+    verified: bool = Field(default=False, description="结果是否经过验证")
