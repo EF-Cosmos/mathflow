@@ -367,6 +367,49 @@ def _extract_intervals(result, var: Symbol) -> list:
     return intervals
 
 
+def _format_inequality_result(result, var: Symbol) -> str:
+    """
+    Format inequality solution as human-readable chained notation.
+
+    SymPy returns And(x > 2, x < 3) which latex() renders as 2 < x \\wedge x < 3.
+    Instead, format as 2 < x < 3 (chained notation).
+    """
+    if isinstance(result, And):
+        parts = list(result.args)
+        # Try to chain: collect bounds on var into lower < var < upper
+        lower_bounds = []  # expressions where var is on the right (e.g. 2 < x)
+        upper_bounds = []  # expressions where var is on the left (e.g. x < 3)
+
+        for part in parts:
+            if isinstance(part, (StrictLessThan, LessThan, StrictGreaterThan, GreaterThan)):
+                if part.lhs == var:
+                    # var < something (upper bound)
+                    op = "\\leq" if isinstance(part, LessThan) else "<"
+                    upper_bounds.append((op, part.rhs))
+                elif part.rhs == var:
+                    # something < var (lower bound)
+                    op = "\\leq" if isinstance(part, GreaterThan) else "<"
+                    lower_bounds.append((op, part.lhs))
+
+        # Build chained notation if we have matching lower/upper bounds
+        if lower_bounds and upper_bounds:
+            chain_parts = []
+            for op, val in lower_bounds:
+                chain_parts.append(latex(val) + f" {op} ")
+            chain_parts.append(latex(var))
+            for op, val in upper_bounds:
+                chain_parts.append(f" {op} " + latex(val))
+            return "".join(chain_parts)
+
+        # Fallback: separate with comma
+        return ",\\; ".join(latex(p) for p in parts)
+
+    elif isinstance(result, Or):
+        return " \\cup ".join(latex(p) for p in result.args)
+
+    return latex(result)
+
+
 def solve_inequality_with_steps(latex_str: str) -> dict:
     """
     Solve an inequality and return result with step-by-step process.
@@ -415,7 +458,7 @@ def solve_inequality_with_steps(latex_str: str) -> dict:
         steps.append({"description": "该不等式无解", "latex": result_text})
         intervals_data = []
     else:
-        result_text = latex(result)
+        result_text = _format_inequality_result(result, var)
         steps.append({"description": "解集", "latex": result_text})
         intervals_data = _extract_intervals(result, var)
 
