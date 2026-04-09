@@ -13,7 +13,9 @@ import {
   ParsedTerm
 } from '../../lib/equation';
 import { factorEquation, factorWithFallback, expandWithFallback, simplifyWithFallback, VerifiedResult, verifyResult } from '../../lib/factorization';
-import { solveEquation, solveInequality } from '../../lib/solving';
+import { solveEquation, solveInequality, solveSystem, IntervalData } from '../../lib/solving';
+import SystemSolveDialog from '../ui/SystemSolveDialog';
+import NumberLine from '../ui/NumberLine';
 import { applyCalculusOperation } from '../../lib/calculus';
 import { 
   Plus, 
@@ -53,6 +55,9 @@ export default function ScratchPad({
   const [multiplyValue, setMultiplyValue] = useState('');
   const [aiAssistEnabled, setAiAssistEnabled] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [showSystemDialog, setShowSystemDialog] = useState(false);
+  const [systemSolveLoading, setSystemSolveLoading] = useState(false);
+  const [lastInequalityIntervals, setLastInequalityIntervals] = useState<IntervalData[] | null>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -285,6 +290,9 @@ export default function ScratchPad({
     const baseLatex = getCurrentLatex();
     if (!baseLatex) return;
 
+    // Clear inequality intervals on every new operation
+    setLastInequalityIntervals(null);
+
     // 特殊处理求解 -- solve equation or inequality
     if (operationName === '求解') {
       // Detect if it's an inequality or equation
@@ -300,6 +308,8 @@ export default function ScratchPad({
           }
           // Add final result with 'Solve Inequality' operation
           addStep(solveResult.result, 'Solve Inequality', solveResult.verified);
+          // Store intervals for NumberLine rendering
+          setLastInequalityIntervals(solveResult.intervals);
           return;
         }
         addStep(baseLatex, '求解 (无法处理)');
@@ -326,9 +336,9 @@ export default function ScratchPad({
       return;
     }
 
-    // 特殊处理方程组求解 -- dialog opens in Plan 03-03
+    // 特殊处理方程组求解 -- open dialog
     if (operationName === '方程组求解') {
-      // Will be wired to SystemSolveDialog in Plan 03-03
+      setShowSystemDialog(true);
       return;
     }
 
@@ -545,6 +555,29 @@ export default function ScratchPad({
 
     addStep(result, operationName);
   }, [getCurrentLatex, addStep, aiAssistEnabled]);
+
+  // 方程组求解处理
+  const handleSystemSolve = useCallback(async (equations: string[], variables: string[]) => {
+    setSystemSolveLoading(true);
+    try {
+      const result = await solveSystem(equations, variables);
+      if (result) {
+        for (const step of result.steps) {
+          addStep(step.latex, 'Solve Step', undefined, step.description);
+        }
+        addStep(result.result, 'Solve System', result.verified);
+        setShowSystemDialog(false);
+      } else {
+        addStep(equations.join(', '), '求解方程组 (无法处理)');
+        setShowSystemDialog(false);
+      }
+    } catch {
+      addStep(equations.join(', '), '求解方程组 (失败)');
+      setShowSystemDialog(false);
+    } finally {
+      setSystemSolveLoading(false);
+    }
+  }, [addStep]);
 
   // Shift+点击：调用后端计算微积分结果
   const handleCalculateCalculus = useCallback(async (operationName: string) => {
@@ -846,6 +879,13 @@ export default function ScratchPad({
                 />
               ))
             )}
+
+            {/* Number line for inequality solutions */}
+            {lastInequalityIntervals && lastInequalityIntervals.length > 0 && (
+              <div className="mt-4 px-4">
+                <NumberLine intervals={lastInequalityIntervals} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -963,6 +1003,14 @@ export default function ScratchPad({
           />
         </div>
       )}
+
+      {/* System Solve Dialog */}
+      <SystemSolveDialog
+        open={showSystemDialog}
+        onClose={() => setShowSystemDialog(false)}
+        onSolve={handleSystemSolve}
+        loading={systemSolveLoading}
+      />
     </div>
   );
 }
