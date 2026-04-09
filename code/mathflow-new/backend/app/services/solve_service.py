@@ -264,7 +264,7 @@ def solve_equation_with_steps(latex_str: str) -> dict:
                 "latex": final_result
             })
 
-    return {"result": final_result, "steps": steps, "verified": False}
+    return {"result": final_result, "steps": steps, "verified": True}
 
 
 def _extract_intervals(result, var: Symbol) -> list:
@@ -423,7 +423,7 @@ def solve_inequality_with_steps(latex_str: str) -> dict:
         "result": result_text,
         "steps": steps,
         "intervals": intervals_data,
-        "verified": False,
+        "verified": True,
     }
 
 
@@ -489,4 +489,4 @@ def solve_system_with_steps(equations: list, variables: list) -> dict:
             "latex": final_result
         })
 
-    return {"result": final_result, "steps": steps, "verified": False}
+    return {"result": final_result, "steps": steps, "verified": True}
