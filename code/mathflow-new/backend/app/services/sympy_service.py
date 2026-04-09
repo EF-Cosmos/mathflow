@@ -272,7 +272,14 @@ def compute_limit(latex_str: str, variable: str, point: str) -> str:
     """
     expr = parse_latex_safe(latex_str)
     var = Symbol(variable)
-    x0 = parse_latex_safe(point)
+
+    # Handle infinity special case: parse_latex("oo") = o*o, not infinity
+    if point in ("oo", "\\infty", "infinity", "+oo"):
+        x0 = sympy.oo
+    elif point in ("-oo", "-\\infty", "-infinity"):
+        x0 = -sympy.oo
+    else:
+        x0 = parse_latex_safe(point)
 
     result = sympy.limit(expr, var, x0)
     return latex(result)
