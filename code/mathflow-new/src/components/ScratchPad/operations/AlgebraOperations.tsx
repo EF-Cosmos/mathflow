@@ -8,6 +8,7 @@ import {
   SquareEqual,
   Replace,
   Sparkles,
+  Calculator,
 } from 'lucide-react';
 import MathRenderer from '../../MathRenderer';
 
@@ -28,6 +29,30 @@ interface AlgebraOperation {
   transform: (latex: string) => string;
   isRealOperation?: boolean; // 是否为需要真实计算的操作（因式分解、展开、化简）
 }
+
+// 求解操作
+const solveOperations: AlgebraOperation[] = [
+  {
+    id: 'solve',
+    name: '求解',
+    description: '求解方程或不等式',
+    icon: Calculator,
+    color: 'text-primary',
+    preview: '2x + 3 = 7 \\Rightarrow x = 2',
+    transform: (l) => `\\text{solve}\\left(${l}\\right)`,
+    isRealOperation: true,
+  },
+  {
+    id: 'system-solve',
+    name: '方程组求解',
+    description: '求解方程组',
+    icon: Calculator,
+    color: 'text-indigo-500',
+    preview: '\\begin{cases} 2x+y=5 \\\\ x-y=1 \\end{cases}',
+    transform: (l) => l,
+    isRealOperation: true,
+  },
+];
 
 // 代数操作定义
 const algebraOperations: AlgebraOperation[] = [
@@ -229,6 +254,8 @@ const powerOperations: AlgebraOperation[] = [
 ];
 
 const colorBg: Record<string, string> = {
+  'text-primary': 'hover:bg-primary/10 dark:hover:bg-primary/20',
+  'text-indigo-500': 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20',
   'text-emerald-500': 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20',
   'text-blue-500': 'hover:bg-blue-50 dark:hover:bg-blue-900/20',
   'text-purple-500': 'hover:bg-purple-50 dark:hover:bg-purple-900/20',
@@ -252,6 +279,7 @@ const colorBg: Record<string, string> = {
 };
 
 const operationGroups = [
+  { id: 'solve', name: '求解', icon: Calculator, operations: solveOperations },
   { id: 'algebra', name: '代数变换', icon: Layers, operations: algebraOperations },
   { id: 'power', name: '幂与根', icon: SquareEqual, operations: powerOperations },
   { id: 'trig', name: '三角函数', icon: SquareEqual, operations: trigOperations },
@@ -264,7 +292,7 @@ export default function AlgebraOperations({
   aiAssistEnabled = false,
   onAiAssistChange,
 }: AlgebraOperationsProps) {
-  const [expandedGroup, setExpandedGroup] = useState<string | null>('algebra');
+  const [expandedGroup, setExpandedGroup] = useState<string | null>('solve');
   const [showPreview, setShowPreview] = useState<string | null>(null);
 
   const renderOperationButton = (op: AlgebraOperation) => {
