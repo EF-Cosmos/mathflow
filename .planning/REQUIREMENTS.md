@@ -18,7 +18,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Operation Reliability
 
 - [ ] **RELI-01**: Backend provides `/api/verify` endpoint that checks mathematical equivalence between input and output
-- [ ] **RELI-02**: Every math operation result is verified before being added as a derivation step
+- [ ] **RELI-02**: Every SymPy backend operation result is verified for mathematical equivalence; unverified results are displayed with an amber warning indicator (not silently accepted and not rejected)
 - [ ] **RELI-03**: LaTeX input is normalized before being sent to SymPy (handle `\cdot`, `\times`, `\left/\right` variants)
 - [ ] **RELI-04**: Test suite covers 100+ typical high school math expressions with expected results
 - [ ] **RELI-05**: Local JavaScript algorithms use proper parsing instead of fragile regex/string matching

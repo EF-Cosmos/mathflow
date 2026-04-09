@@ -36,12 +36,12 @@ Plans:
 - [x] 01-02: Remove Supabase/auth, migrate pages to IndexedDB, add auto-save
 
 ### Phase 2: Operation Reliability
-**Goal**: Every math operation result displayed to the user is verified to be mathematically correct, with no silent wrong answers
+**Goal**: Every math operation result displayed to the user is verified for mathematical correctness; unverified results are clearly flagged with a warning so the user is never misled
 **Depends on**: Phase 1
 **Requirements**: RELI-01, RELI-02, RELI-03, RELI-04, RELI-05
 **Success Criteria** (what must be TRUE):
   1. Every operation result is checked for mathematical equivalence before being added as a step
-  2. Incorrect results are rejected and the user sees a clear error message, never a wrong answer
+  2. Unverified results are displayed with an amber warning indicator (border + badge + text), clearly flagged so the user can judge for themselves -- per design decision D-04 (warn-not-reject)
   3. LaTeX input variants (\cdot vs \times, \left( vs (, etc.) all produce correct results after normalization
   4. The test suite passes 100+ high school math expressions covering all supported operations
   5. Local JavaScript math parsing uses proper AST-based parsing, not fragile regex/string matching
