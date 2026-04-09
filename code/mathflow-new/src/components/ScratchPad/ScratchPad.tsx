@@ -13,6 +13,7 @@ import {
   ParsedTerm
 } from '../../lib/equation';
 import { factorEquation, factorWithFallback, expandWithFallback, simplifyWithFallback, VerifiedResult, verifyResult } from '../../lib/factorization';
+import { solveEquation, solveInequality } from '../../lib/solving';
 import { applyCalculusOperation } from '../../lib/calculus';
 import { 
   Plus, 
@@ -111,7 +112,7 @@ export default function ScratchPad({
   }, [historyIndex, history]);
 
   // 添加步骤
-  const addStep = useCallback((latex: string, operation: string = 'Input', verified?: boolean) => {
+  const addStep = useCallback((latex: string, operation: string = 'Input', verified?: boolean, annotation?: string) => {
     if (!latex.trim()) return;
 
     const newStep: DerivationStep = {
@@ -121,6 +122,7 @@ export default function ScratchPad({
       operation,
       timestamp: Date.now(),
       verified,
+      annotation,
     };
 
     const newSteps = [...steps, newStep];
@@ -282,6 +284,53 @@ export default function ScratchPad({
   ) => {
     const baseLatex = getCurrentLatex();
     if (!baseLatex) return;
+
+    // 特殊处理求解 -- solve equation or inequality
+    if (operationName === '求解') {
+      // Detect if it's an inequality or equation
+      const hasInequality = /[<>]|\\leq|\\geq|\\le|\\ge/.test(baseLatex);
+      const hasEquals = baseLatex.includes('=');
+
+      if (hasInequality) {
+        const solveResult = await solveInequality(baseLatex);
+        if (solveResult) {
+          // Add all intermediate steps with 'Solve Step' operation
+          for (const step of solveResult.steps) {
+            addStep(step.latex, 'Solve Step', undefined, step.description);
+          }
+          // Add final result with 'Solve Inequality' operation
+          addStep(solveResult.result, 'Solve Inequality', solveResult.verified);
+          return;
+        }
+        addStep(baseLatex, '求解 (无法处理)');
+        return;
+      }
+
+      if (hasEquals) {
+        const solveResult = await solveEquation(baseLatex);
+        if (solveResult) {
+          // Add all intermediate steps
+          for (const step of solveResult.steps) {
+            addStep(step.latex, 'Solve Step', undefined, step.description);
+          }
+          // Add final result
+          addStep(solveResult.result, 'Solve Equation', solveResult.verified);
+          return;
+        }
+        addStep(baseLatex, '求解 (无法处理)');
+        return;
+      }
+
+      // No equation or inequality detected
+      addStep(baseLatex, '求解 (请输入方程或不等式)');
+      return;
+    }
+
+    // 特殊处理方程组求解 -- dialog opens in Plan 03-03
+    if (operationName === '方程组求解') {
+      // Will be wired to SystemSolveDialog in Plan 03-03
+      return;
+    }
 
     // 特殊处理因式分解
     if (operationName === '因式分解') {

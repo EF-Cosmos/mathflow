@@ -47,6 +47,10 @@ const operationLabels: Record<string, { label: string; color: string; icon?: str
   'Both Sides Multiply': { label: '两边乘', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' },
   'Both Sides Divide': { label: '两边除', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' },
   'Simplify': { label: '化简', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' },
+  'Solve Equation':   { label: '求解方程', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
+  'Solve Inequality': { label: '求解不等式', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' },
+  'Solve System':     { label: '求解方程组', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
+  'Solve Step':       { label: '求解步骤', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
 };
 
 export default function StepCard({
