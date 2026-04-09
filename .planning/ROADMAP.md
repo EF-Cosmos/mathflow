@@ -48,9 +48,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [x] 02-01: TBD
+- [x] 02-02: TBD
+- [x] 02-03: TBD
 
 ### Phase 3: Equation Solving
 **Goal**: Users can solve all standard high school equation types with step-by-step transformation display
