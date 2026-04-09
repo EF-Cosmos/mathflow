@@ -137,6 +137,32 @@ export default function ScratchPad({
     setActiveAction(null);
   }, [steps, pushHistory]);
 
+  // 批量添加步骤（避免循环调用 addStep 时的闭包陈旧问题）
+  const addSteps = useCallback((stepDefs: Array<{ latex: string; operation: string; verified?: boolean; annotation?: string }>) => {
+    const filtered = stepDefs.filter(d => d.latex.trim());
+    if (filtered.length === 0) return;
+
+    const baseNumber = steps.length + 1;
+    const now = Date.now();
+    const newSteps: DerivationStep[] = [
+      ...steps,
+      ...filtered.map((d, i) => ({
+        id: `step-${now}-${i}-${Math.random().toString(36).slice(2)}`,
+        stepNumber: baseNumber + i,
+        latex: d.latex.trim(),
+        operation: d.operation,
+        timestamp: now + i, // ensure unique timestamps
+        verified: d.verified,
+        annotation: d.annotation,
+      })),
+    ];
+
+    setSteps(newSteps);
+    pushHistory(newSteps);
+    setCurrentInput('');
+    setActiveAction(null);
+  }, [steps, pushHistory]);
+
   // 编辑步骤
   const editStep = useCallback((stepId: string, newLatex: string) => {
     const newSteps = steps.map(s => 
@@ -302,12 +328,12 @@ export default function ScratchPad({
       if (hasInequality) {
         const solveResult = await solveInequality(baseLatex);
         if (solveResult) {
-          // Add all intermediate steps with 'Solve Step' operation
-          for (const step of solveResult.steps) {
-            addStep(step.latex, 'Solve Step', undefined, step.description);
-          }
-          // Add final result with 'Solve Inequality' operation
-          addStep(solveResult.result, 'Solve Inequality', solveResult.verified);
+          // Build all steps at once to avoid stale closure in loop
+          const stepDefs = [
+            ...solveResult.steps.map(s => ({ latex: s.latex, operation: 'Solve Step', annotation: s.description })),
+            { latex: solveResult.result, operation: 'Solve Inequality', verified: solveResult.verified },
+          ];
+          addSteps(stepDefs);
           // Store intervals for NumberLine rendering
           setLastInequalityIntervals(solveResult.intervals);
           return;
@@ -319,12 +345,12 @@ export default function ScratchPad({
       if (hasEquals) {
         const solveResult = await solveEquation(baseLatex);
         if (solveResult) {
-          // Add all intermediate steps
-          for (const step of solveResult.steps) {
-            addStep(step.latex, 'Solve Step', undefined, step.description);
-          }
-          // Add final result
-          addStep(solveResult.result, 'Solve Equation', solveResult.verified);
+          // Build all steps at once to avoid stale closure in loop
+          const stepDefs = [
+            ...solveResult.steps.map(s => ({ latex: s.latex, operation: 'Solve Step', annotation: s.description })),
+            { latex: solveResult.result, operation: 'Solve Equation', verified: solveResult.verified },
+          ];
+          addSteps(stepDefs);
           return;
         }
         addStep(baseLatex, '求解 (无法处理)');
@@ -554,7 +580,7 @@ export default function ScratchPad({
     }
 
     addStep(result, operationName);
-  }, [getCurrentLatex, addStep, aiAssistEnabled]);
+  }, [getCurrentLatex, addStep, addSteps, aiAssistEnabled]);
 
   // 方程组求解处理
   const handleSystemSolve = useCallback(async (equations: string[], variables: string[]) => {
@@ -562,10 +588,11 @@ export default function ScratchPad({
     try {
       const result = await solveSystem(equations, variables);
       if (result) {
-        for (const step of result.steps) {
-          addStep(step.latex, 'Solve Step', undefined, step.description);
-        }
-        addStep(result.result, 'Solve System', result.verified);
+        const stepDefs = [
+          ...result.steps.map(s => ({ latex: s.latex, operation: 'Solve Step' as const, annotation: s.description })),
+          { latex: result.result, operation: 'Solve System' as const, verified: result.verified },
+        ];
+        addSteps(stepDefs);
         setShowSystemDialog(false);
       } else {
         addStep(equations.join(', '), '求解方程组 (无法处理)');
@@ -577,7 +604,7 @@ export default function ScratchPad({
     } finally {
       setSystemSolveLoading(false);
     }
-  }, [addStep]);
+  }, [addStep, addSteps]);
 
   // Shift+点击：调用后端计算微积分结果
   const handleCalculateCalculus = useCallback(async (operationName: string) => {
