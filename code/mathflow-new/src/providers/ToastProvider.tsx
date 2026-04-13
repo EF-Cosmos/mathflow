@@ -4,8 +4,17 @@
  * Manages toast notifications state and provides toast API
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import { Toast, type ToastProps, type ToastVariant } from '../components/ui/Toast';
+
+const DEFAULT_DURATION = 4000;
+const ERROR_DURATION = 6000;
+
+let toastId = 0;
+
+function generateId(): string {
+  return `toast-${++toastId}`;
+}
 
 interface ToastData extends Omit<ToastProps, 'onClose'> {
   id: string;
@@ -21,14 +30,6 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
-
-const DEFAULT_DURATION = 4000;
-
-let toastId = 0;
-
-function generateId(): string {
-  return `toast-${++toastId}`;
-}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastData[]>([]);
@@ -48,7 +49,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       setToasts((prev) => [...prev, newToast]);
 
-      // Auto-dismiss after duration
       if (newToast.duration && newToast.duration > 0) {
         setTimeout(() => {
           removeToast(id);
@@ -65,7 +65,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [toast]);
 
   const error = useCallback((message: string, title?: string) => {
-    return toast({ message, title, variant: 'error', duration: 6000 });
+    return toast({ message, title, variant: 'error', duration: ERROR_DURATION });
   }, [toast]);
 
   const warning = useCallback((message: string, title?: string) => {
@@ -76,45 +76,50 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return toast({ message, title, variant: 'info' });
   }, [toast]);
 
-  // Confirm dialog using toast
   const confirm = useCallback((message: string, title?: string): Promise<boolean> => {
     return new Promise((resolve) => {
-      const id = generateId();
-      const newToast: ToastData = {
-        id,
+      const confirmId = generateId();
+      const cancelId = generateId();
+
+      const handleConfirm = function() {
+        resolve(true);
+        removeToast(confirmId);
+        removeToast(cancelId);
+      };
+
+      const handleCancel = function() {
+        resolve(false);
+        removeToast(confirmId);
+        removeToast(cancelId);
+      };
+
+      const confirmToast: ToastData = {
+        id: confirmId,
         message,
         title,
         variant: 'info',
-        duration: 0, // Don't auto-dismiss
+        duration: 0,
         action: {
           label: '确认',
-          onClick: () => {
-            resolve(true);
-            removeToast(id);
-          },
+          onClick: handleConfirm,
         },
       };
 
-      setToasts((prev) => [...prev, newToast]);
+      const cancelToast: ToastData = {
+        id: cancelId,
+        message: '取消',
+        variant: 'info',
+        duration: 0,
+        action: {
+          label: '取消',
+          onClick: handleCancel,
+        },
+      };
 
-      // Also add a cancel option
+      setToasts((prev) => [...prev, confirmToast]);
+
       setTimeout(() => {
-        // Create cancel toast
-        const cancelId = generateId();
-        setToasts((prev) => [...prev, {
-          id: cancelId,
-          message: '取消',
-          variant: 'default',
-          duration: 0,
-          action: {
-            label: '取消',
-            onClick: () => {
-              resolve(false);
-              removeToast(id);
-              removeToast(cancelId);
-            },
-          },
-        }]);
+        setToasts((prev) => [...prev, cancelToast]);
       }, 50);
     });
   }, [removeToast]);

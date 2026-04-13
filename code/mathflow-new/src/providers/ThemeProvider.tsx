@@ -7,10 +7,14 @@
  * - Smooth theme transitions
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
-type ThemeMode = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark';
+
+const THEME_STORAGE_KEY = 'mathflow-theme';
+const THEME_COLOR_DARK = '#0A0A0A';
+const THEME_COLOR_LIGHT = '#FFFFFF';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -20,22 +24,18 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'mathflow-theme';
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Read from localStorage on mount
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     return (stored as Theme) || 'system';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<ThemeMode>('light');
 
-  // Resolve system theme
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const updateResolvedTheme = () => {
+    const updateResolvedTheme = function() {
       if (theme === 'system') {
         setResolvedTheme(mediaQuery.matches ? 'dark' : 'light');
       } else {
@@ -45,34 +45,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     updateResolvedTheme();
 
-    // Listen for system theme changes
     const handler = () => updateResolvedTheme();
     mediaQuery.addEventListener('change', handler);
 
     return () => mediaQuery.removeEventListener('change', handler);
   }, [theme]);
 
-  // Apply theme to DOM
   useEffect(() => {
     const root = document.documentElement;
     const isDark = resolvedTheme === 'dark';
 
-    // Add/remove dark class
     if (isDark) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
 
-    // Set theme-color for mobile browsers
-    const themeColor = isDark ? '#0A0A0A' : '#FFFFFF';
+    const themeColor = isDark ? THEME_COLOR_DARK : THEME_COLOR_LIGHT;
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
       metaThemeColor.setAttribute('content', themeColor);
     }
   }, [resolvedTheme]);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = function(newTheme: Theme) {
     setThemeState(newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
   };

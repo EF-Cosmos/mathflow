@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
-interface ToastProps {
+export interface ToastProps {
   id: string;
   title?: string;
   message: string;
@@ -23,27 +23,11 @@ interface ToastProps {
   };
 }
 
-const variantStyles: Record<ToastVariant, { bg: string; border: string; icon: string }> = {
-  success: {
-    bg: 'bg-success-bg',
-    border: 'border-success',
-    icon: 'text-success',
-  },
-  error: {
-    bg: 'bg-error-bg',
-    border: 'border-error',
-    icon: 'text-error',
-  },
-  warning: {
-    bg: 'bg-warning-bg',
-    border: 'border-warning',
-    icon: 'text-warning',
-  },
-  info: {
-    bg: 'bg-info-bg',
-    border: 'border-info',
-    icon: 'text-info',
-  },
+const variantStyles: Record<ToastVariant, { bg: string; icon: string }> = {
+  success: { bg: 'bg-success-bg', icon: 'text-success' },
+  error: { bg: 'bg-error-bg', icon: 'text-error' },
+  warning: { bg: 'bg-warning-bg', icon: 'text-warning' },
+  info: { bg: 'bg-info-bg', icon: 'text-info' },
 };
 
 const variantIcons: Record<ToastVariant, React.ReactNode> = {
@@ -87,7 +71,6 @@ export function Toast({
         'min-w-[320px] max-w-md',
         'animate-slide-in-from-right',
         styles.bg,
-        styles.border,
         'border'
       )}
       role="alert"

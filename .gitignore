@@ -34,3 +34,6 @@ docker-compose.override.yml
 
 # Project specific
 user_input_files/
+
+# GSD planning docs (local-only)
+.planning/

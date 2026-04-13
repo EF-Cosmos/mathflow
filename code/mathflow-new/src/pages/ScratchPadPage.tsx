@@ -60,6 +60,7 @@ export default function ScratchPadPage() {
           const newDer = await createDerivation(title);
           dId = newDer.id;
           setDerivationId(dId);
+          navigate(`/scratch/${dId}`, { replace: true });
         } else {
           // Update title/timestamp
           await upsertDerivation({

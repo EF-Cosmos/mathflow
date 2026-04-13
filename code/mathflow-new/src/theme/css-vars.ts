@@ -4,12 +4,14 @@
  * Generates CSS custom properties from theme definitions
  */
 
-import { lightTheme, darkTheme, type Theme } from './themes';
+import { lightTheme, darkTheme } from './themes';
 
-/**
- * Convert theme object to CSS variable string
- */
-function themeToCSSVars(theme: Theme, prefix: string = ''): string {
+interface ThemeLike {
+  colors: Record<string, string>;
+  borderRadius: string;
+}
+
+function themeToCSSVars(theme: ThemeLike, prefix: string = ''): string {
   const vars: string[] = [];
 
   for (const [key, value] of Object.entries(theme.colors)) {
@@ -20,9 +22,6 @@ function themeToCSSVars(theme: Theme, prefix: string = ''): string {
   return vars.join('\n');
 }
 
-/**
- * Generate CSS for both themes
- */
 export function generateThemeCSS(): string {
   const lightVars = themeToCSSVars(lightTheme);
   const darkVars = themeToCSSVars(darkTheme);
@@ -42,139 +41,68 @@ ${darkVars}
 `;
 }
 
-/**
- * Get CSS variable name for a theme color
- */
 export function getCSSVar(colorName: string): string {
   return `hsl(var(--${colorName}))`;
 }
 
-/**
- * Common CSS variable mappings for use in components
- */
-export const cssVars = {
-  // Background
-  background: getCSSVar('background'),
-  backgroundSecondary: getCSSVar('background-secondary'),
-  backgroundTertiary: getCSSVar('background-tertiary'),
-  backgroundElevated: getCSSVar('background-elevated'),
+const COLORS = [
+  'background',
+  'background-secondary',
+  'background-tertiary',
+  'background-elevated',
+  'foreground',
+  'foreground-secondary',
+  'foreground-muted',
+  'primary',
+  'primary-foreground',
+  'primary-hover',
+  'secondary',
+  'secondary-foreground',
+  'accent',
+  'accent-foreground',
+  'success',
+  'success-foreground',
+  'success-bg',
+  'warning',
+  'warning-foreground',
+  'warning-bg',
+  'error',
+  'error-foreground',
+  'error-bg',
+  'info',
+  'info-foreground',
+  'info-bg',
+  'border',
+  'border-subtle',
+  'border-strong',
+  'input',
+  'input-background',
+  'input-placeholder',
+  'card',
+  'card-foreground',
+  'popover',
+  'popover-foreground',
+  'sidebar-background',
+  'sidebar-foreground',
+  'sidebar-primary',
+  'sidebar-primary-foreground',
+  'sidebar-accent',
+  'sidebar-accent-foreground',
+  'sidebar-border',
+  'sidebar-ring',
+] as const;
 
-  // Foreground
-  foreground: getCSSVar('foreground'),
-  foregroundSecondary: getCSSVar('foreground-secondary'),
-  foregroundMuted: getCSSVar('foreground-muted'),
+const cssVars: Record<string, string> = {};
 
-  // Primary
-  primary: getCSSVar('primary'),
-  primaryForeground: getCSSVar('primary-foreground'),
-  primaryHover: getCSSVar('primary-hover'),
+for (const color of COLORS) {
+  const camelCase = color.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  cssVars[camelCase] = getCSSVar(color);
+}
 
-  // Secondary
-  secondary: getCSSVar('secondary'),
-  secondaryForeground: getCSSVar('secondary-foreground'),
+export { cssVars };
 
-  // Accent
-  accent: getCSSVar('accent'),
-  accentForeground: getCSSVar('accent-foreground'),
-
-  // Status
-  success: getCSSVar('success'),
-  successForeground: getCSSVar('success-foreground'),
-  successBg: getCSSVar('success-bg'),
-
-  warning: getCSSVar('warning'),
-  warningForeground: getCSSVar('warning-foreground'),
-  warningBg: getCSSVar('warning-bg'),
-
-  error: getCSSVar('error'),
-  errorForeground: getCSSVar('error-foreground'),
-  errorBg: getCSSVar('error-bg'),
-
-  info: getCSSVar('info'),
-  infoForeground: getCSSVar('info-foreground'),
-  infoBg: getCSSVar('info-bg'),
-
-  // Borders
-  border: getCSSVar('border'),
-  borderSubtle: getCSSVar('border-subtle'),
-  borderStrong: getCSSVar('border-strong'),
-
-  // Input
-  input: getCSSVar('input'),
-  inputBackground: getCSSVar('input-background'),
-  inputPlaceholder: getCSSVar('input-placeholder'),
-
-  // Card
-  card: getCSSVar('card'),
-  cardForeground: getCSSVar('card-foreground'),
-
-  // Popover
-  popover: getCSSVar('popover'),
-  popoverForeground: getCSSVar('popover-foreground'),
-} as const;
-
-/**
- * Export CSS variables for Tailwind config integration
- */
 export const tailwindCSSVars = {
-  colors: {
-    background: 'hsl(var(--background))',
-    'background-secondary': 'hsl(var(--background-secondary))',
-    'background-tertiary': 'hsl(var(--background-tertiary))',
-    'background-elevated': 'hsl(var(--background-elevated))',
-
-    foreground: 'hsl(var(--foreground))',
-    'foreground-secondary': 'hsl(var(--foreground-secondary))',
-    'foreground-muted': 'hsl(var(--foreground-muted))',
-
-    primary: 'hsl(var(--primary))',
-    'primary-foreground': 'hsl(var(--primary-foreground))',
-    'primary-hover': 'hsl(var(--primary-hover))',
-
-    secondary: 'hsl(var(--secondary))',
-    'secondary-foreground': 'hsl(var(--secondary-foreground))',
-
-    accent: 'hsl(var(--accent))',
-    'accent-foreground': 'hsl(var(--accent-foreground))',
-
-    success: 'hsl(var(--success))',
-    'success-foreground': 'hsl(var(--success-foreground))',
-    'success-bg': 'hsl(var(--success-bg))',
-
-    warning: 'hsl(var(--warning))',
-    'warning-foreground': 'hsl(var(--warning-foreground))',
-    'warning-bg': 'hsl(var(--warning-bg))',
-
-    error: 'hsl(var(--error))',
-    'error-foreground': 'hsl(var(--error-foreground))',
-    'error-bg': 'hsl(var(--error-bg))',
-
-    info: 'hsl(var(--info))',
-    'info-foreground': 'hsl(var(--info-foreground))',
-    'info-bg': 'hsl(var(--info-bg))',
-
-    border: 'hsl(var(--border))',
-    'border-subtle': 'hsl(var(--border-subtle))',
-    'border-strong': 'hsl(var(--border-strong))',
-
-    input: 'hsl(var(--input))',
-    'input-background': 'hsl(var(--input-background))',
-    'input-placeholder': 'hsl(var(--input-placeholder))',
-
-    card: 'hsl(var(--card))',
-    'card-foreground': 'hsl(var(--card-foreground))',
-
-    popover: 'hsl(var(--popover))',
-    'popover-foreground': 'hsl(var(--popover-foreground))',
-
-    // Sidebar (existing compatibility)
-    'sidebar-background': 'hsl(var(--sidebar-background))',
-    'sidebar-foreground': 'hsl(var(--sidebar-foreground))',
-    'sidebar-primary': 'hsl(var(--sidebar-primary))',
-    'sidebar-primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-    'sidebar-accent': 'hsl(var(--sidebar-accent))',
-    'sidebar-accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-    'sidebar-border': 'hsl(var(--sidebar-border))',
-    'sidebar-ring': 'hsl(var(--sidebar-ring))',
-  },
+  colors: Object.fromEntries(
+    COLORS.map(color => [color, `hsl(var(--${color}))`])
+  ),
 };
